@@ -1,0 +1,6 @@
+{
+    "python.analysis.extraPaths": [
+        "repairperson-simulator-app/.venv/lib/python3.12/site-packages"
+    ],
+    "python.analysis.typeCheckingMode": "basic"
+}
