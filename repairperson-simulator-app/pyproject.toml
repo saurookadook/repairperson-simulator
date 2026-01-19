@@ -29,3 +29,5 @@ dev = [
 addopts = ["-ra", "--color=yes", "--code-highlight=yes"]
 python_files = ["tests/test_*.py", "tests/*_test.py"]
 required_plugins = ["pytest-sugar>=1.0.0,<2.0.0", "pytest-xdist>=3.5.0,<4.0.0"]
+testpaths = ["tests"]
+useFixtures = ["rich_inspect"]
