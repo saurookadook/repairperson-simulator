@@ -2,7 +2,7 @@ import logging
 import os
 from enum import Enum
 from rich import pretty
-from typing import Any
+from typing import Any, Dict, Literal, Optional
 
 BaseLoggerClass = logging.getLoggerClass()
 
@@ -18,9 +18,22 @@ window_width = (
 )  # to account for characters added by logging handlers
 
 
-class LogLevelEnum(Enum):
+class LogLevel(Enum):
+    def __new__(cls, *args):
+        value = len(cls.__members__) + 1
+        obj = object.__new__(cls)
+        obj._value_ = value
+        return obj
 
-    NOTSET = logging.NOTSET
+
+LogLevelName = Literal["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+
+
+class LogLevelEnum(LogLevel):
+    def __init__(self, *args):
+        super().__init__(*args)
+
+    NOTSET = 0  # logging.NOTSET
     DEBUG = logging.DEBUG
     INFO = logging.INFO
     WARNING = logging.WARNING
@@ -30,6 +43,24 @@ class LogLevelEnum(Enum):
     @classmethod
     def level_values(cls):
         return [level.value for level in cls]
+
+    @classmethod
+    def get_name_for_value(cls, level_value: int) -> LogLevelName:
+        if level_value in LogLevelValueMap:
+            return LogLevelValueMap[level_value]
+        return cls.INFO.name
+
+    @classmethod
+    def get_value_for_name(cls, level_name: str) -> int:
+        try:
+            return cls[level_name.upper()].value
+        except KeyError:
+            return cls.INFO.value
+
+
+LogLevelValueMap: Dict[int, LogLevelName] = {
+    log_level.value: log_level.name for log_level in LogLevelEnum
+}
 
 
 class ExtendedLogger(BaseLoggerClass):
@@ -166,7 +197,9 @@ def is_prod():
     return ENV.lower() == "prod"
 
 
-def configure_logging(app_name: str):
+def configure_logging(app_name: Optional[str]):
+    logger = logging.getLogger(app_name) if app_name is not None else root_logger
+
     if is_prod():
         console_handler = logging.StreamHandler()
     else:
@@ -176,7 +209,7 @@ def configure_logging(app_name: str):
             show_time=False, rich_tracebacks=True, tracebacks_theme="emacs"
         )
 
-    root_logger.setLevel(getattr(logging, LOG_LEVEL.upper()))
+    logger.setLevel(getattr(logging, LOG_LEVEL.upper()))
 
     format_str = (
         # "{asctime} [{name}: {lineno}] [{levelname:<10s}]: {message:<"
@@ -185,4 +218,6 @@ def configure_logging(app_name: str):
         + "s}"
     )
     console_handler.setFormatter(logging.Formatter(format_str, style="{"))
-    root_logger.addHandler(console_handler)
+    logger.addHandler(console_handler)
+
+    return logger
