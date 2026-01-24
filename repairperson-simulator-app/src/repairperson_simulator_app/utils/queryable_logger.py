@@ -21,7 +21,6 @@ class QueryableLogger:
         self.level_name = LogLevelEnum.get_name_for_value(self.level)
 
     def log(self, *args, level: int = LogLevelEnum.NOTSET.value):
-        # breakpoint()
         level_name = (
             self.level_name
             if level != self.level
@@ -47,11 +46,7 @@ class QueryableLogger:
             self.filters.add(filter_name)
 
     def logify(self, **kwargs):
-        print(kwargs)
         should_log = any(key in self.filters for key in kwargs.keys())
-        # for key, value in kwargs.items():
-        #     if key in self.filters:
-        #         self.logger.log(self.level, value)
         if should_log:
             level_from_kwargs = kwargs.get("level", self.level)
             resolved_level = self._resolve_level_value(level_from_kwargs)
@@ -73,6 +68,4 @@ class QueryableLogger:
             return level
         elif isinstance(level, str):
             return LogLevelEnum.get_value_for_name(level)
-
-        breakpoint()
         return LogLevelEnum.NOTSET.value
