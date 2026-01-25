@@ -3,6 +3,7 @@ import pytest
 import simpy
 from rich import inspect
 
+from repairperson_simulator_app.simulator.job_priority_store import JobPriorityStore
 from repairperson_simulator_app.utils.logging import configure_logging
 
 test_logger: logging.Logger = configure_logging("TEST_LOGGER")
@@ -20,3 +21,9 @@ def rich_inspect():
 def env():
     """Provides a fresh SimPy environment for each test."""
     return simpy.Environment()
+
+
+@pytest.fixture()
+def job_store(env: simpy.Environment):
+    """Provides a JobPriorityStore for tests."""
+    return JobPriorityStore(env)
