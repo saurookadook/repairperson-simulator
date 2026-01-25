@@ -42,7 +42,7 @@ class EngineConfigFactory(factory.Factory):
 
     horizon = 10080  # Minutes in a week
     machines = factory.List(
-        [factory.SubFactory(MachineConfigFactory) for _ in range(2)]
+        [factory.SubFactory(MachineConfigFactory) for _ in range(5)]
     )
     operators = factory.List(
         [factory.SubFactory(OperatorConfigFactory) for _ in range(2)]
