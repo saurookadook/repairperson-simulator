@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import Enum, auto
 from math import inf
-from typing import Optional, Tuple
+from typing import Set, Tuple
 
 
 Severity = int
@@ -14,14 +14,35 @@ JobPriority = Tuple[Severity, Deadline, WorkDuration, JobID]
 
 
 class JobType(Enum):
-    ELECTRICAL = auto()
-    MECHANICAL = auto()
-    SOFTWARE = auto()
+    ELECTRICAL_REPAIR = auto()
+    MECHANICAL_REPAIR = auto()
+    ELECTRICAL_MAINTENANCE = auto()
+    MECHANICAL_MAINTENANCE = auto()
+    SOFTWARE_UPDATE = auto()
 
 
 @dataclass
 class Job:
-    """Represents a repair job for a machine."""
+    """
+    Represents a maintenance or repair job in the simulator.
+
+    Attributes:
+        `created_at_ts` (`float`): Timestamp when the job was created.
+        `id` (`JobID`): Unique identifier for the job.
+        `job_type` (`JobType`): The type/category of the job _(e.g., repair, maintenance)_.
+        `machine_id` (`int`): ID of the machine this job is associated with.
+        `planned_duration` (`WorkDuration`): The originally planned duration for completing the job.\n
+            _(units: minutes)_
+        `remaining_duration` (WorkDuration): The remaining time needed to complete the job.\n
+            _(units: minutes)_
+        `assigned_operator_ids` (Set[int]): Set of `Operator` IDs currently assigned to this job.\n
+            Defaults to an empty `set`.
+
+    Properties:
+        priority (JobPriority): Computed priority of the job based on job type severity,
+            remaining duration, and job ID. Used for job scheduling and ordering.
+            Returns a tuple of (severity, inf, remaining_duration, id).
+    """
 
     created_at_ts: float
     id: JobID
@@ -29,7 +50,7 @@ class Job:
     machine_id: int
     planned_duration: WorkDuration
     remaining_duration: WorkDuration
-    assigned_operator_id: Optional[int] = None
+    assigned_operator_ids: Set[int] = field(default_factory=set)
 
     @property
     def priority(self) -> JobPriority:
