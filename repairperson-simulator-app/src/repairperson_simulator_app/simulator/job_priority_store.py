@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import simpy
+from simpy.resources.store import StoreGet, StorePut
 
 
 class JobPriorityStore:
@@ -10,10 +11,10 @@ class JobPriorityStore:
         self.env = env
         self.store = simpy.PriorityStore(env)
 
-    def get(self):
+    def get(self) -> StoreGet:
         """Get the highest priority job from the store."""
         return self.store.get()
 
-    def put(self, job):
+    def put(self, job) -> StorePut:
         """Put a job into the store with its priority."""
-        self.store.put(simpy.PriorityItem(job.priority, job))
+        return self.store.put(simpy.PriorityItem(job.priority, job))
