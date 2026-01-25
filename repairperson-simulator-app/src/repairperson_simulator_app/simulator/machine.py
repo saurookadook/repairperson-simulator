@@ -1,7 +1,12 @@
+from __future__ import annotations
+
+import logging
 import simpy
 
 from repairperson_simulator_app.simulator.entities import Operator
 from repairperson_simulator_app.simulator.randomizer import Randomizer
+
+logger: logging.Logger = logging.getLogger(__name__)
 
 
 class Machine:
@@ -45,22 +50,29 @@ class Machine:
                     done_in = 0  # Set to 0 to exit while loop.
 
                 except simpy.Interrupt:
-                    self.broken = True
-                    done_in -= self.env.now - start
+                    self.is_broken = True
+                    return  # TODO: replace with repair logic
+                    # done_in -= self.env.now - start
 
-                    with repairperson.request(priority=1) as req:
-                        yield req
-                        # TODO: get job details and pass "remaining_duration"
-                        yield self.env.timeout()
+                    # with repairperson.request(priority=1) as req:
+                    #     yield req
+                    #     # TODO: get job details and pass "remaining_duration"
+                    #     yield self.env.timeout()
 
-                    self.broken = False
+                    # self.is_broken = False
 
             self.parts_made += 1
 
     def intermittently_break(self):
         """Break the machine at random intervals."""
         while True:
-            time_until_failure = self.randomizer.time_to_failure()
+            time_until_failure = self.randomizer.time_to_failure_in_seconds()
+            logger.debug(
+                f"Machine '{self.name}' will break in {time_until_failure:.2f} seconds. ({time_until_failure/60:.2f} minutes)"
+            )
             yield self.env.timeout(time_until_failure)
-            if not self.broken:
+            if not self.is_broken:
+                logger.debug(
+                    f"Machine '{self.name}' broken at {self.env.now} seconds. ({self.env.now/60:.2f} minutes)"
+                )
                 self.working_process.interrupt()
