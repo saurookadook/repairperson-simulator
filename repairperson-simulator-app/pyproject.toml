@@ -23,11 +23,16 @@ dev = [
     "pytest-sugar>=1.1.1",
     "pytest-xdist>=3.8.0",
     "rich>=14.2.0",
+    "taskipy>=1.14.1",
 ]
 
 [tool.pytest.ini_options]
 addopts = ["-ra", "--color=yes", "--code-highlight=yes"]
+loglevel = "DEBUG"
 python_files = ["tests/test_*.py", "tests/*_test.py"]
 required_plugins = ["pytest-sugar>=1.0.0,<2.0.0", "pytest-xdist>=3.5.0,<4.0.0"]
 testpaths = ["tests"]
 useFixtures = ["rich_inspect"]
+
+[tool.taskipy.tasks]
+test = { cmd = "pytest", help = "Run the tests :D" }
