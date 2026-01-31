@@ -6,10 +6,10 @@ class Randomizer:
 
     def __init__(
         self,
-        distribution: str,
         mean_processing_time: float,
         mean_time_to_failure: float,
         sigma_processing_time: float,
+        distribution: str = "normal",  # TODO: maybe don't need this? Or should it be an enum?
         **kwargs
     ):
         self.distribution = distribution
@@ -24,6 +24,6 @@ class Randomizer:
             random.normalvariate(self.mean_processing_time, self.sigma_processing_time)
         )
 
-    def time_to_failure(self):
-        """Generate a random time to failure for a machine based on the specified distribution."""
+    def time_to_failure_in_seconds(self):
+        """Generate a random time in seconds to failure for a machine based on the specified distribution."""
         return random.expovariate(1 / self.mean_time_to_failure)
