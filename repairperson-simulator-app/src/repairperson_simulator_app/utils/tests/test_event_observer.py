@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from repairperson_simulator_app.utils.event_observer import EventObserver
+from repairperson_simulator_app.utils.event_observer import Event, EventObserver
 
 
 ON_DECREMENT_COUNT = "on_decrement_count"
@@ -30,28 +30,35 @@ def test_event_observer_register_event_existing_event(event_observer):
     assert ON_MACHINE_BROKEN in event_observer._registered_events
     assert event_observer._registered_events[ON_MACHINE_BROKEN] == []
 
-    event_observer._registered_events[ON_MACHINE_BROKEN].append(lambda: None)
+    event_observer._registered_events[ON_MACHINE_BROKEN].append(lambda event: None)
     event_observer.register_event(ON_MACHINE_BROKEN)
     assert len(event_observer._registered_events[ON_MACHINE_BROKEN]) == 1
 
 
 def test_event_observer_add_event_listener(event_observer):
-    event_observer.add_event_listener(ON_MACHINE_BROKEN, lambda: "listener1")
-    event_observer.add_event_listener(ON_MACHINE_BROKEN, lambda: "listener2")
+    event_observer.add_event_listener(
+        ON_MACHINE_BROKEN, lambda event: f"{event.type} listener1"
+    )
+    event_observer.add_event_listener(
+        ON_MACHINE_BROKEN, lambda event: f"{event.type} listener2"
+    )
 
     assert ON_MACHINE_BROKEN in event_observer._registered_events
     assert len(event_observer._registered_events[ON_MACHINE_BROKEN]) == 2
-    assert all(callable(listener) for listener in event_observer._registered_events[ON_MACHINE_BROKEN])
+    assert all(
+        callable(listener)
+        for listener in event_observer._registered_events[ON_MACHINE_BROKEN]
+    )
 
 
 def test_event_observer_dispatch_event_multiple_listeners(event_observer):
     count = 0
 
-    def plus_one():
+    def plus_one(event: Event):
         nonlocal count
         count += 1
 
-    def plus_two():
+    def plus_two(event: Event):
         nonlocal count
         count += 2
 
@@ -63,14 +70,16 @@ def test_event_observer_dispatch_event_multiple_listeners(event_observer):
     assert count == 4
 
 
-def test_event_observer_dispatch_event_does_not_call_listeners_for_other_registered_events(event_observer):
+def test_event_observer_dispatch_event_does_not_call_listeners_for_other_registered_events(
+    event_observer,
+):
     count = 0
 
-    def plus_one():
+    def plus_one(event: Event):
         nonlocal count
         count += 1
 
-    def minus_one():
+    def minus_one(event: Event):
         nonlocal count
         count -= 1
 
@@ -97,6 +106,3 @@ def test_event_observer_reset_all_registered_events(event_observer):
 
     event_observer.reset_all_registered_events()
     assert event_observer._registered_events == {}
-
-
-
