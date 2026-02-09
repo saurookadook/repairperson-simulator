@@ -12,6 +12,7 @@ from repairperson_simulator_app.test_factories.config import (
     EngineConfigFactory,
     RootConfigFactory,
 )
+from repairperson_simulator_app.utils.event_observer import EventObserver
 from repairperson_simulator_app.utils.logging import configure_logging
 
 test_logger: logging.Logger = configure_logging("TEST_LOGGER")
@@ -23,6 +24,11 @@ def rich_inspect():
         return inspect(obj, **kwargs)
 
     return wrapper
+
+
+@pytest.fixture
+def event_observer() -> EventObserver:
+    return EventObserver()
 
 
 @pytest.fixture
