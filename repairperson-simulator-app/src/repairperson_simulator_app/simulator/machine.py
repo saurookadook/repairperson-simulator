@@ -4,6 +4,7 @@ import logging
 import simpy
 
 from repairperson_simulator_app.simulator.entities import Operator
+from repairperson_simulator_app.simulator.exceptions import MachineBrokenException
 from repairperson_simulator_app.simulator.randomizer import Randomizer
 
 logger: logging.Logger = logging.getLogger(__name__)
@@ -16,7 +17,6 @@ class Machine:
     after the it is repaired.
 
     A machine has a *name* and a number of *parts_made* thus far.
-
     """
 
     def __init__(
@@ -49,9 +49,9 @@ class Machine:
                     yield self.env.timeout(done_in)
                     done_in = 0  # Set to 0 to exit while loop.
 
-                except simpy.Interrupt:
+                except simpy.Interrupt as exc:
                     self.is_broken = True
-                    return  # TODO: replace with repair logic
+                    raise MachineBrokenException(self.name, self.env.now) from exc
                     # done_in -= self.env.now - start
 
                     # with repairperson.request(priority=1) as req:

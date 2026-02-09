@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-
 from repairperson_simulator_app.constants.enums import MachineStatus
 from repairperson_simulator_app.events.base import Event
 from repairperson_simulator_app.simulator.machine import Machine

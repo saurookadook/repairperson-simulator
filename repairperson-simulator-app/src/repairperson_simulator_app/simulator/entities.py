@@ -5,20 +5,14 @@ from enum import Enum, auto
 from math import inf
 from typing import Set, Tuple
 
+from repairperson_simulator_app.constants.enums import JobType
+
 
 Severity = int
 Deadline = float
 WorkDuration = float
 JobID = int
 JobPriority = Tuple[Severity, Deadline, WorkDuration, JobID]
-
-
-class JobType(Enum):
-    ELECTRICAL_REPAIR = auto()
-    MECHANICAL_REPAIR = auto()
-    ELECTRICAL_MAINTENANCE = auto()
-    MECHANICAL_MAINTENANCE = auto()
-    SOFTWARE_UPDATE = auto()
 
 
 @dataclass
@@ -58,11 +52,19 @@ class Job:
         return (job_type_severity, inf, self.remaining_duration, self.id)
 
 
+def calc_job_priority(
+    job: Job,
+) -> JobPriority:
+    job_type = job.job_type
+    job_type_severity = JobType[job_type.name].value
+    return (job_type_severity, inf, job.remaining_duration, job.id)
+
+
 @dataclass
 class Operator:
     """Represents a repairperson (operator)."""
 
     id: int
     name: str
-    repair_time: float  # in minutes
+    # repair_time: float  # in minutes
     walk_rate: float  # in meters per second
