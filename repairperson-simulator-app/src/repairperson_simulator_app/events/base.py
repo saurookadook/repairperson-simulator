@@ -1,11 +1,14 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import dataclass
+from typing import Generic, Optional, TypeVar
+
+
+Details = TypeVar("Details")
 
 
 @dataclass
-class Event:
+class Event(Generic[Details]):
     type: str
     timestamp: float
-    details: Optional[dict] = field(default_factory=dict)
+    details: Optional[Details]

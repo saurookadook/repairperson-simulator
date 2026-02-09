@@ -4,14 +4,8 @@ from dataclasses import dataclass, field
 from datetime import datetime as dtime
 from typing import Callable, Optional
 
+from repairperson_simulator_app.events.base import Event
 from repairperson_simulator_app.utils.singleton_meta import SingletonMeta
-
-
-@dataclass
-class Event:
-    type: str
-    timestamp: float
-    details: Optional[dict] = field(default_factory=dict)
 
 
 ListenerCallback = Callable[[Event], None]

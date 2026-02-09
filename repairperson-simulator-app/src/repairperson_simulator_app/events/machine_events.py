@@ -17,8 +17,13 @@ class OnMachineBrokenEventDetails(dict):
 
 class OnMachineBrokenEvent(Event):
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(
+        self,
+        type: str,
+        timestamp: float,
+        details: OnMachineBrokenEventDetails,
+    ):
+        super().__init__(type=type, timestamp=timestamp, details=details)
         machine = getattr(self, "details", {}).get("machine", None)
 
         if machine is None:
