@@ -4,9 +4,8 @@ import pytest
 import simpy
 from typing import Callable
 
-from repairperson_simulator_app.constants.enums import MachineStatus
-from repairperson_simulator_app.constants.events import EventType
-from repairperson_simulator_app.events.machine_events import OnMachineBrokenEventDetails
+from repairperson_simulator_app.constants import EventType, MachineStatus
+from repairperson_simulator_app.events import OnMachineBrokenEventDetails
 from repairperson_simulator_app.simulator.config import EngineConfig
 from repairperson_simulator_app.simulator.event_logger import EventLogger
 from repairperson_simulator_app.simulator.job_priority_store import JobPriorityStore

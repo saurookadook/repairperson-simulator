@@ -3,7 +3,7 @@ from __future__ import annotations
 from pydantic import BaseModel, Field
 from typing import List
 
-from repairperson_simulator_app.constants.time_measurements import MINUTES_IN_A_WEEK
+from repairperson_simulator_app.constants import MINUTES_IN_A_WEEK
 
 
 class BaseConfig(BaseModel):

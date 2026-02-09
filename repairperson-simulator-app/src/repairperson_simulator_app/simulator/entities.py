@@ -5,7 +5,7 @@ from enum import Enum, auto
 from math import inf
 from typing import Set, Tuple
 
-from repairperson_simulator_app.constants.enums import JobType
+from repairperson_simulator_app.constants import JobType
 
 
 Severity = int
