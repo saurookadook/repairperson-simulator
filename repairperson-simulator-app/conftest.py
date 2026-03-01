@@ -28,7 +28,9 @@ def rich_inspect():
 
 @pytest.fixture
 def event_observer() -> EventObserver:
-    return EventObserver()
+    instance = EventObserver()
+    instance._registered_events = {}
+    return instance
 
 
 @pytest.fixture

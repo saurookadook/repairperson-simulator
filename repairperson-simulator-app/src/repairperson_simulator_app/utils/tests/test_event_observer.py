@@ -10,13 +10,6 @@ ON_INCREMENT_COUNT = "on_increment_count"
 ON_MACHINE_BROKEN = "on_machine_broken"
 
 
-@pytest.fixture
-def event_observer():
-    instance = EventObserver()
-    instance._registered_events = {}
-    return instance
-
-
 def test_event_observer_register_event_new_event(event_observer):
     event_observer.register_event(ON_MACHINE_BROKEN)
 

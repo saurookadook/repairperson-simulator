@@ -3,9 +3,15 @@ from __future__ import annotations
 import logging
 import simpy
 
+from repairperson_simulator_app.constants.events import EventType
 from repairperson_simulator_app.simulator.entities import Operator
+from repairperson_simulator_app.events.machine_events import (
+    OnMachineBrokenEvent,
+    OnMachineBrokenEventDetails,
+)
 from repairperson_simulator_app.simulator.exceptions import MachineBrokenException
 from repairperson_simulator_app.simulator.randomizer import Randomizer
+from repairperson_simulator_app.utils.event_observer import event_observer
 
 logger: logging.Logger = logging.getLogger(__name__)
 
@@ -51,7 +57,11 @@ class Machine:
 
                 except simpy.Interrupt as exc:
                     self.is_broken = True
-                    raise MachineBrokenException(self.name, self.env.now) from exc
+                    event_observer.dispatch_event(
+                        EventType.ON_MACHINE_BROKEN.value,
+                        details=OnMachineBrokenEventDetails(self),
+                    )
+                    # raise MachineBrokenException(self.name, self.env.now) from exc
                     # done_in -= self.env.now - start
 
                     # with repairperson.request(priority=1) as req:

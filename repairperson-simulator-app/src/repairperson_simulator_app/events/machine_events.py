@@ -2,13 +2,12 @@ from __future__ import annotations
 
 from repairperson_simulator_app.constants.enums import MachineStatus
 from repairperson_simulator_app.events.base import Event
-from repairperson_simulator_app.simulator.machine import Machine
 
 
 class OnMachineBrokenEventDetails(dict):
     """Event triggered when a machine breaks down."""
 
-    def __init__(self, machine: Machine):
+    def __init__(self, machine: Machine):  # type: ignore - using string to avoid circular import
         self.machine = machine
         self.status = MachineStatus.BROKEN.value
 

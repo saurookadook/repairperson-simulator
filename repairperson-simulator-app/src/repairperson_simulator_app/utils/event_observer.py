@@ -46,3 +46,6 @@ class EventObserver(metaclass=SingletonMeta):
     def reset_all_registered_events(self):
         """Reset all registered listeners for all events."""
         self._registered_events = {}
+
+
+event_observer = EventObserver()
