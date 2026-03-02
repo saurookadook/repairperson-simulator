@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum, auto
 from math import inf
 from typing import Set, Tuple
 
@@ -27,9 +26,9 @@ class Job:
         `machine_id` (`int`): ID of the machine this job is associated with.
         `planned_duration` (`WorkDuration`): The originally planned duration for completing the job.\n
             _(units: minutes)_
-        `remaining_duration` (WorkDuration): The remaining time needed to complete the job.\n
+        `remaining_duration` (`WorkDuration`): The remaining time needed to complete the job.\n
             _(units: minutes)_
-        `assigned_operator_ids` (Set[int]): Set of `Operator` IDs currently assigned to this job.\n
+        `assigned_operator_ids` (`Set[int]`): Set of `Operator` IDs currently assigned to this job.\n
             Defaults to an empty `set`.
 
     Properties:
@@ -66,5 +65,5 @@ class Operator:
 
     id: int
     name: str
-    # repair_time: float  # in minutes
     walk_rate: float  # in meters per second
+    current_job_id: JobID | None = None
