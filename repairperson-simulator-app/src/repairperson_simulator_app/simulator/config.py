@@ -79,6 +79,7 @@ class RootConfig(BaseConfig):
     number_of_operators: int = Field(
         2, description="The number of operators in the simulation."
     )
+    # TODO: need to add rngs using `numpy`
     seed: int = Field(42, description="The random seed for the simulation.")
     sigma_processing_time: float = Field(
         2.0,

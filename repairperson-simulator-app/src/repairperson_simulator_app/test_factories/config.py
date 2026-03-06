@@ -59,3 +59,7 @@ class RootConfigFactory(factory.Factory):
     number_of_operators = 2
     seed = 54320
     sigma_processing_time = 2.0
+
+
+class HighFailureRateRootConfigFactory(RootConfigFactory):
+    mean_time_to_failure = 30.0
