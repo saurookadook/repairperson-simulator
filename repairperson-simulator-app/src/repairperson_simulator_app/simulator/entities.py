@@ -2,16 +2,16 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from math import inf
-from typing import Set, Tuple
+from typing import TYPE_CHECKING, Optional, Set
 
 from repairperson_simulator_app.constants import JobType
 
-
-Severity = int
-Deadline = float
-WorkDuration = float
-JobID = int
-JobPriority = Tuple[Severity, Deadline, WorkDuration, JobID]
+if TYPE_CHECKING:
+    from repairperson_simulator_app.constants.types import (
+        JobID,
+        JobPriority,
+        WorkDuration,
+    )
 
 
 @dataclass
@@ -47,8 +47,7 @@ class Job:
 
     @property
     def priority(self) -> JobPriority:
-        job_type_severity = JobType[self.job_type.name].value
-        return (job_type_severity, inf, self.remaining_duration, self.id)
+        return calc_job_priority(self)
 
 
 def calc_job_priority(
@@ -67,3 +66,4 @@ class Operator:
     name: str
     walk_rate: float  # in meters per second
     current_job_id: JobID | None = None
+    system_location: Optional[int] = None
