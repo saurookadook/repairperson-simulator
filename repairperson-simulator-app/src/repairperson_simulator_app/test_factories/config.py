@@ -24,7 +24,7 @@ class MachineConfigFactory(factory.Factory):
         model = MachineConfig
 
     name = factory.Sequence(lambda n: f"Machine_{n}")
-    failure_rate = 0.01
+    failure_rate_per_hour = 0.01
 
 
 class OperatorConfigFactory(factory.Factory):
@@ -32,7 +32,6 @@ class OperatorConfigFactory(factory.Factory):
         model = OperatorConfig
 
     name = factory.Sequence(lambda n: f"Operator_{n}")
-    repair_time = 30.0
     walk_rate = 1.3
 
 

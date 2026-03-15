@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 from typing import List
 
 from repairperson_simulator_app.constants import MINUTES_IN_A_WEEK
 
 
 class BaseConfig(BaseModel):
-    class Config:
-        extra = "forbid"
+    model_config = ConfigDict(extra="forbid")
 
 
 class JobConfig(BaseConfig):
@@ -30,8 +29,8 @@ class MachineConfig(BaseConfig):
     """Configuration model for a machine."""
 
     name: str = Field(..., description="The name of the machine.")
-    failure_rate: float = Field(
-        ..., description="The failure rate of the machine (failures per minute)."
+    failure_rate_per_hour: float = Field(
+        ..., description="The failure rate of the machine (failures per hour)."
     )
 
 
@@ -39,10 +38,6 @@ class OperatorConfig(BaseModel):
     """Configuration model for an operator (repairperson)."""
 
     name: str = Field(..., description="The name of the operator.")
-    repair_time: float = Field(
-        30.0,
-        description="The time it takes for the operator to repair a machine (units: minutes).",
-    )
     walk_rate: float = Field(
         1.3, description="The walking rate of the operator (units: meters per second)."
     )
