@@ -5,7 +5,11 @@ description = "A simulator for the repairperson problem using SimPy."
 readme = "README.md"
 authors = [{ name = "Andy Maskiell", email = "maskiella@gmail.com" }]
 requires-python = ">=3.12"
-dependencies = ["pydantic>=2.12.5", "simpy>=4.1.1"]
+dependencies = [
+    "numpy>=2.4.3",
+    "pydantic>=2.12.5",
+    "simpy>=4.1.1",
+]
 
 [project.scripts]
 repairperson-simulator-app = "repairperson_simulator_app:main"
