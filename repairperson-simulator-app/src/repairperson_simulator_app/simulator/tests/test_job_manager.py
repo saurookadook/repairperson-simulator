@@ -37,7 +37,7 @@ def test_job_manager_initialization(
     assert job_manager.machines == machines
 
 
-def test_job_manager_listen_for_machine_failures(
+def test_job_manager_on_machine_failure_creates_and_schedules_job(
     mocker,
     engine_config: EngineConfig,
     env: simpy.Environment,
@@ -59,19 +59,29 @@ def test_job_manager_listen_for_machine_failures(
     event_observer.add_event_listener(
         EventType.ON_MACHINE_BROKEN.value, job_manager.on_machine_failure
     )
-    event_observer.dispatch_event(
-        EventType.ON_MACHINE_BROKEN.value,
-        OnMachineBrokenEventDetails(
-            machine=machines[0],
-            job_type=JobType.MECHANICAL_REPAIR,
-            repair_time_in_min=20.0,
-        ),
+
+    event_details = OnMachineBrokenEventDetails(
+        machine=machines[0],
+        job_type=JobType.MECHANICAL_REPAIR,
+        repair_time_in_min=20.0,
     )
+
+    job_store = job_manager.job_store
+    assert len(job_store.items) == 0
+
+    event_observer.dispatch_event(EventType.ON_MACHINE_BROKEN.value, event_details)
 
     assert spy.call_count == 1
     event_call_arg = spy.call_args[0][0]
     assert event_call_arg.type == EventType.ON_MACHINE_BROKEN.value
-    assert event_call_arg.details.job_type == JobType.MECHANICAL_REPAIR
-    assert event_call_arg.details.machine == machines[0]
-    assert event_call_arg.details.repair_time_in_min == 20.0
-    assert event_call_arg.details.status == MachineStatus.BROKEN.value
+    assert event_call_arg.details.job_type == event_details.job_type
+    assert event_call_arg.details.machine == event_details.machine
+    assert event_call_arg.details.repair_time_in_min == event_details.repair_time_in_min
+    assert event_call_arg.details.status == event_details.status
+
+    assert len(job_store.items) == 1
+    _, job = job_store.items[0]
+    assert job.job_type == event_details.job_type
+    assert job.machine_id == event_details.machine.id
+    assert job.planned_duration == event_details.repair_time_in_min
+    assert job.remaining_duration == event_details.repair_time_in_min

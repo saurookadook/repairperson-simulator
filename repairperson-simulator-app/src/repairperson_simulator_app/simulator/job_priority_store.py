@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import simpy
 from simpy.resources.store import StoreGet, StorePut
+from typing import Any
 
 
 class JobPriorityStore:
@@ -18,3 +19,7 @@ class JobPriorityStore:
     def put(self, job) -> StorePut:
         """Put a job into the store with its priority."""
         return self.store.put(simpy.PriorityItem(job.priority, job))
+
+    @property
+    def items(self) -> list[Any]:
+        return self.store.items
