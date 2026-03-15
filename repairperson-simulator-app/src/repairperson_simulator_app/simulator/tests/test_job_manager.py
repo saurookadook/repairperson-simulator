@@ -4,7 +4,7 @@ import pytest
 import simpy
 from typing import Callable
 
-from repairperson_simulator_app.constants import EventType, MachineStatus
+from repairperson_simulator_app.constants import EventType, JobType, MachineStatus
 from repairperson_simulator_app.events import OnMachineBrokenEventDetails
 from repairperson_simulator_app.simulator.config import EngineConfig
 from repairperson_simulator_app.simulator.event_logger import EventLogger
@@ -61,11 +61,17 @@ def test_job_manager_listen_for_machine_failures(
     )
     event_observer.dispatch_event(
         EventType.ON_MACHINE_BROKEN.value,
-        OnMachineBrokenEventDetails(machine=machines[0]),
+        OnMachineBrokenEventDetails(
+            machine=machines[0],
+            job_type=JobType.MECHANICAL_REPAIR,
+            repair_time_in_min=20.0,
+        ),
     )
 
     assert spy.call_count == 1
     event_call_arg = spy.call_args[0][0]
     assert event_call_arg.type == EventType.ON_MACHINE_BROKEN.value
+    assert event_call_arg.details.job_type == JobType.MECHANICAL_REPAIR
     assert event_call_arg.details.machine == machines[0]
+    assert event_call_arg.details.repair_time_in_min == 20.0
     assert event_call_arg.details.status == MachineStatus.BROKEN.value

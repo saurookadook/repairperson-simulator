@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import simpy
 
+from repairperson_simulator_app.constants.enums import JobType
 from repairperson_simulator_app.constants.events import EventType
 from repairperson_simulator_app.simulator.entities import Operator
 from repairperson_simulator_app.events.machine_events import (
@@ -57,9 +58,17 @@ class Machine:
 
                 except simpy.Interrupt as exc:
                     self.is_broken = True
+                    # TODO: this should be semi-randomized
+                    job_type = JobType.MECHANICAL_REPAIR
+                    # TODO: this should be semi-randomized and/or dependent on job type
+                    repair_time_in_min = 20.0
                     event_observer.dispatch_event(
                         EventType.ON_MACHINE_BROKEN.value,
-                        details=OnMachineBrokenEventDetails(self),
+                        details=OnMachineBrokenEventDetails(
+                            machine=self,
+                            job_type=job_type,
+                            repair_time_in_min=repair_time_in_min,
+                        ),
                     )
                     # raise MachineBrokenException(self.name, self.env.now) from exc
                     # done_in -= self.env.now - start
