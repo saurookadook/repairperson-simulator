@@ -4,8 +4,10 @@ import simpy
 from simpy.resources.store import StoreGet, StorePut
 from typing import Any
 
+from repairperson_simulator_app.simulator.interfaces import AbstractBaseStore
 
-class JobPriorityStore:
+
+class JobPriorityStore(AbstractBaseStore):
     """A custom SimPy store that allows for priority-based retrieval of jobs."""
 
     def __init__(self, env: simpy.Environment):
@@ -23,3 +25,6 @@ class JobPriorityStore:
     @property
     def items(self) -> list[Any]:
         return self.store.items
+
+    def size(self) -> int:
+        return len(self.store.items)
