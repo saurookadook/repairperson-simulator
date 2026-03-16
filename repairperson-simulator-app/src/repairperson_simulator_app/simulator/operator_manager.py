@@ -3,7 +3,7 @@ from __future__ import annotations
 import simpy
 
 from repairperson_simulator_app.events import Event
-from repairperson_simulator_app.simulator.config import EngineConfig, OperatorConfig
+from repairperson_simulator_app.simulator.config import EngineConfig
 from repairperson_simulator_app.simulator.entities import Operator
 from repairperson_simulator_app.simulator.event_logger import EventLogger
 from repairperson_simulator_app.simulator.job_priority_store import JobPriorityStore
@@ -16,14 +16,13 @@ class OperatorManager(metaclass=SingletonMeta):
         self,
         engine_config: EngineConfig,
         env: simpy.Environment,
-        event_logger: EventLogger,
         job_store: JobPriorityStore,
     ):
         self.engine_config = engine_config
         self.env = env
-        self.event_logger = event_logger
         self.job_store = job_store
 
+        self.event_logger = EventLogger(self.env)
         self.operators = self.engine_config.operators
         self.operator_processes = [None] * len(self.operators)
 

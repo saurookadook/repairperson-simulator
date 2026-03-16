@@ -22,9 +22,8 @@ def test_operator_manager_initialization(
         for i in range(op_config.count)
     ]
 
-    event_logger = EventLogger(env)
     job_store = JobPriorityStore(env)
-    operator_manager = OperatorManager(engine_config, env, event_logger, job_store)
+    operator_manager = OperatorManager(engine_config, env, job_store)
 
     assert len(operator_manager.operators) == op_config.count
     for i, operator in enumerate(operator_manager.operators):

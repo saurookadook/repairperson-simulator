@@ -9,7 +9,6 @@ from repairperson_simulator_app.simulator.randomizer import Randomizer
 from repairperson_simulator_app.test_factories.config import (
     HighFailureRateRootConfigFactory,
 )
-from repairperson_simulator_app.test_factories.entities import OperatorFactory
 
 
 def test_machine_initialization(
@@ -33,7 +32,7 @@ def test_machine_breakdown_process(
     randomizer = randomizer_factory(HighFailureRateRootConfigFactory())
     machine = Machine(id=1, name="Test Machine", env=env, randomizer=randomizer)
 
-    machine.start_work(repairperson=OperatorFactory())
+    machine.start_work()
 
     simulation_duration = 1000  # seconds
 

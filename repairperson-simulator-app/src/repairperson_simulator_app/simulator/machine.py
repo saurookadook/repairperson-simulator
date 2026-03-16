@@ -4,8 +4,11 @@ import logging
 import simpy
 
 from repairperson_simulator_app.constants.enums import JobType
-from repairperson_simulator_app.constants.events import EventType
-from repairperson_simulator_app.simulator.entities import Operator
+from repairperson_simulator_app.constants.events import (
+    EventType,
+    MachineLifecycleEventType,
+)
+from repairperson_simulator_app.simulator.event_logger import EventLogger
 from repairperson_simulator_app.events.machine_events import (
     OnMachineBrokenEvent,
     OnMachineBrokenEventDetails,
@@ -36,27 +39,41 @@ class Machine:
         self.parts_made = 0
         self.randomizer = randomizer
 
-    def start_work(self, repairperson: Operator):
-        """Start the machine's operation."""
-        self.working_process = self.env.process(self.working(repairperson))
-        self.env.process(self.intermittently_break())
+        self.event_logger = EventLogger(self.env)
+        self._done_in = 0.0
 
-    def working(self, repairperson: Operator):
+    def start_work(self):
+        """Start the machine's operation."""
+        self.working_process = self.env.process(self.do_work())
+        self.env.process(self.intermittently_break())
+        return self.working_process
+
+    def do_work(self):
         """Produce parts as long as the simulation runs.
 
         While making a part, the machine may break multiple times.
         Request a repairperson when this happens.
 
         """
+        self.event_logger.log_event(
+            details=dict(
+                machine_id=self.id,
+                machine_name=self.name,
+                parts_made=self.parts_made,
+            ),
+            event_type=MachineLifecycleEventType.MACHINE_WORK_STARTED.value,
+        )
+
         while True:
-            done_in = self.randomizer.time_per_part()
-            while done_in:
+            self._done_in = self.randomizer.time_per_part()
+            while self._done_in:
                 start = self.env.now
                 try:
-                    yield self.env.timeout(done_in)
-                    done_in = 0  # Set to 0 to exit while loop.
+                    yield self.env.timeout(self._done_in)
+                    self._done_in = 0  # Set to 0 to exit while loop.
 
                 except simpy.Interrupt as exc:
+                    self._done_in -= self.env.now - start
                     self.is_broken = True
                     # TODO: this should be semi-randomized
                     job_type = JobType.MECHANICAL_REPAIR
@@ -70,6 +87,7 @@ class Machine:
                             repair_time_in_min=repair_time_in_min,
                         ),
                     )
+                    return
                     # raise MachineBrokenException(self.name, self.env.now) from exc
                     # done_in -= self.env.now - start
 
@@ -81,6 +99,14 @@ class Machine:
                     # self.is_broken = False
 
             self.parts_made += 1
+            self.event_logger.log_event(
+                details=dict(
+                    machine_id=self.id,
+                    machine_name=self.name,
+                    parts_made=self.parts_made,
+                ),
+                event_type=MachineLifecycleEventType.MACHINE_COMPLETED_PART.value,
+            )
 
     def intermittently_break(self):
         """Break the machine at random intervals."""

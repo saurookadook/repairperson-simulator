@@ -30,7 +30,7 @@ def test_job_manager_initialization(
     ]
 
     engine_config.machines = machines
-    job_manager = JobManager(engine_config, env, event_logger, job_store)
+    job_manager = JobManager(engine_config, env, job_store)
 
     assert job_manager.engine_config == engine_config
     assert job_manager.env == env
@@ -39,11 +39,10 @@ def test_job_manager_initialization(
     assert job_manager.machines == machines
 
 
-def test_job_manager_on_machine_failure_creates_and_schedules_job(
+def test_job_manager_handle_machine_failure_creates_and_schedules_job(
     mocker,
     engine_config: EngineConfig,
     env: simpy.Environment,
-    event_logger: EventLogger,
     event_observer: EventObserver,
     job_store: JobPriorityStore,
     randomizer_factory: Callable[..., Randomizer],
@@ -56,12 +55,12 @@ def test_job_manager_on_machine_failure_creates_and_schedules_job(
     ]
 
     engine_config.machines = machines
-    job_manager = JobManager(engine_config, env, event_logger, job_store)
+    job_manager = JobManager(engine_config, env, job_store)
 
-    spy = mocker.spy(job_manager, "on_machine_failure")
+    spy = mocker.spy(job_manager, "handle_machine_failure")
 
     event_observer.add_event_listener(
-        EventType.ON_MACHINE_BROKEN.value, job_manager.on_machine_failure
+        EventType.ON_MACHINE_BROKEN.value, job_manager.handle_machine_failure
     )
 
     event_details = OnMachineBrokenEventDetails(

@@ -21,15 +21,14 @@ class JobManager(metaclass=SingletonMeta):
         self,
         engine_config: EngineConfig,
         env: simpy.Environment,
-        event_logger: EventLogger,
         job_store: JobPriorityStore,
     ):
         self.engine_config = engine_config
         self.env = env
-        self.event_logger = event_logger
         self.job_store = job_store
         self.machines = self.engine_config.machines
 
+        self.event_logger = EventLogger(self.env)
         self.in_progress_jobs: List[Job] = []
         self._job_id = count()
 
@@ -37,11 +36,11 @@ class JobManager(metaclass=SingletonMeta):
         priority = calc_job_priority(job)
         self.job_store.put((priority, job))
 
-    def on_machine_failure(self, event: Event[OnMachineBrokenEventDetails]):
+    def handle_machine_failure(self, event: Event[OnMachineBrokenEventDetails]):
         """Callback function for machine failures to create jobs accordingly."""
         if event.details is None or event.details.machine is None:
             raise ValueError(
-                f"[{self.on_machine_failure.__qualname__}] 'event' is missing details about broken machine."
+                f"[{self.handle_machine_failure.__qualname__}] 'event' is missing details about broken machine."
             )
 
         job_id = next(self._job_id)
