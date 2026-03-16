@@ -1,5 +1,5 @@
 from .enums import JobType, MachineStatus
-from .events import EventType
+from .events import EventType, MachineLifecycleEventType
 from .time_measurements import (
     HOURS_IN_A_DAY,
     MINUTES_IN_AN_HOUR,
@@ -24,6 +24,7 @@ __all__ = [
     "JobID",
     "JobPriority",
     "JobType",
+    "MachineLifecycleEventType",
     "MachineStatus",
     "Severity",
     "WorkDuration",

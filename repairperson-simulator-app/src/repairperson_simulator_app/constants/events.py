@@ -11,3 +11,8 @@ class EventType(Enum):
     ON_MACHINE_REPAIRED = "on_machine_repaired"
     ON_SIMULATION_STARTED = "on_simulation_started"
     ON_SIMULATION_ENDED = "on_simulation_ended"
+
+
+class MachineLifecycleEventType(Enum):
+    MACHINE_WORK_STARTED = "machine_work_started"
+    MACHINE_COMPLETED_PART = "machine_part_completed"

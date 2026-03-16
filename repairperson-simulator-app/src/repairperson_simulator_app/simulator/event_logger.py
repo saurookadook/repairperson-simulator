@@ -1,15 +1,16 @@
 from __future__ import annotations
 
 import simpy
-from typing import Dict
+
+from repairperson_simulator_app.utils.singleton_meta import SingletonMeta
 
 
-class EventLogger:
+class EventLogger(metaclass=SingletonMeta):
     def __init__(self, env: simpy.Environment):
         self.env = env
         self.events = []
 
-    def log_event(self, event_type: str, details: Dict):
+    def log_event(self, event_type: str, details: dict):
         event = {
             "details": details,
             "event_type": event_type,

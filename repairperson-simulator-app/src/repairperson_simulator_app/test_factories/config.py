@@ -44,7 +44,7 @@ class EngineConfigFactory(factory.Factory):
     class Meta:
         model = EngineConfig
 
-    horizon = 10080  # Minutes in a week
+    horizon_in_minutes = 10080  # Minutes in a week
     machines = factory.List([])
     operators = factory.List([])
 

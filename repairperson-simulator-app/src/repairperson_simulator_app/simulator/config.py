@@ -45,7 +45,7 @@ class OperatorConfig(BaseModel):
 class EngineConfig(BaseConfig):
     """Configuration model for the simulation's engine."""
 
-    horizon: int = Field(
+    horizon_in_minutes: int = Field(
         default=MINUTES_IN_A_WEEK,
         description="The time horizon for the simulation in minutes.",
     )
