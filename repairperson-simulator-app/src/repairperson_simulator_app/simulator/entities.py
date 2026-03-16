@@ -2,16 +2,14 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from math import inf
-from typing import TYPE_CHECKING, Optional, Set
+from typing import Optional, Set
 
-from repairperson_simulator_app.constants import JobType
-
-if TYPE_CHECKING:
-    from repairperson_simulator_app.constants.types import (
-        JobID,
-        JobPriority,
-        WorkDuration,
-    )
+from repairperson_simulator_app.constants import (
+    JobID,
+    JobPriority,
+    JobType,
+    WorkDuration,
+)
 
 
 @dataclass

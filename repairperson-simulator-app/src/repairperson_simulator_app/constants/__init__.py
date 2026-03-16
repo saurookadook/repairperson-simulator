@@ -6,13 +6,25 @@ from .time_measurements import (
     MINUTES_IN_A_DAY,
     MINUTES_IN_A_WEEK,
 )
+from .types import (
+    Deadline,
+    JobID,
+    JobPriority,
+    Severity,
+    WorkDuration,
+)
 
 __all__ = [
     "MINUTES_IN_AN_HOUR",
     "HOURS_IN_A_DAY",
     "MINUTES_IN_A_DAY",
     "MINUTES_IN_A_WEEK",
+    "Deadline",
     "EventType",
+    "JobID",
+    "JobPriority",
     "JobType",
     "MachineStatus",
+    "Severity",
+    "WorkDuration",
 ]

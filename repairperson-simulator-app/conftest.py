@@ -72,3 +72,9 @@ def randomizer_factory() -> Callable[..., Randomizer]:
         )
 
     return factory
+
+
+@pytest.fixture
+def root_config():
+    """Provides a default `RootConfig` from `RootConfigFactory` for tests."""
+    return RootConfigFactory()

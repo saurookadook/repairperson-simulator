@@ -7,6 +7,12 @@ from repairperson_simulator_app.simulator.config import (
     OperatorConfig,
     RootConfig,
 )
+from repairperson_simulator_app.simulator.entities import Operator
+from repairperson_simulator_app.simulator.machine import Machine
+
+# TODO: better solution for this?
+DEFAULT_MACHINE_COUNT = 5
+DEFAULT_OPERATOR_COUNT = 2
 
 
 class JobConfigFactory(factory.Factory):
@@ -23,15 +29,14 @@ class MachineConfigFactory(factory.Factory):
     class Meta:
         model = MachineConfig
 
-    name = factory.Sequence(lambda n: f"Machine_{n}")
-    failure_rate_per_hour = 0.01
+    count = DEFAULT_MACHINE_COUNT
 
 
 class OperatorConfigFactory(factory.Factory):
     class Meta:
         model = OperatorConfig
 
-    name = factory.Sequence(lambda n: f"Operator_{n}")
+    count = DEFAULT_OPERATOR_COUNT
     walk_rate = 1.3
 
 
@@ -40,22 +45,18 @@ class EngineConfigFactory(factory.Factory):
         model = EngineConfig
 
     horizon = 10080  # Minutes in a week
-    machines = factory.List(
-        [factory.SubFactory(MachineConfigFactory) for _ in range(5)]
-    )
-    operators = factory.List(
-        [factory.SubFactory(OperatorConfigFactory) for _ in range(2)]
-    )
+    machines = factory.List([])
+    operators = factory.List([])
 
 
 class RootConfigFactory(factory.Factory):
     class Meta:
         model = RootConfig
 
+    machine_config = factory.SubFactory(MachineConfigFactory)
     mean_processing_time = 10.0
     mean_time_to_failure = 300.0
-    number_of_machines = 5
-    number_of_operators = 2
+    operator_config = factory.SubFactory(OperatorConfigFactory)
     seed = 54320
     sigma_processing_time = 2.0
 

@@ -23,15 +23,15 @@ class JobManager(metaclass=SingletonMeta):
         env: simpy.Environment,
         event_logger: EventLogger,
         job_store: JobPriorityStore,
-        machines: List[Machine],
     ):
         self.engine_config = engine_config
         self.env = env
         self.event_logger = event_logger
         self.job_store = job_store
-        self._job_id = count()
-        self.machines = machines
+        self.machines = self.engine_config.machines
+
         self.in_progress_jobs: List[Job] = []
+        self._job_id = count()
 
     def add_job(self, job):
         priority = calc_job_priority(job)

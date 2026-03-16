@@ -4,10 +4,12 @@ from pydantic import BaseModel, ConfigDict, Field
 from typing import List
 
 from repairperson_simulator_app.constants import MINUTES_IN_A_WEEK
+from repairperson_simulator_app.simulator.entities import Operator
+from repairperson_simulator_app.simulator.machine import Machine
 
 
 class BaseConfig(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")
 
 
 class JobConfig(BaseConfig):
@@ -26,18 +28,15 @@ class JobConfig(BaseConfig):
 
 
 class MachineConfig(BaseConfig):
-    """Configuration model for a machine."""
+    """Configuration for all machines."""
 
-    name: str = Field(..., description="The name of the machine.")
-    failure_rate_per_hour: float = Field(
-        ..., description="The failure rate of the machine (failures per hour)."
-    )
+    count: int = Field(5, description="The number of machines in the simulation.")
 
 
 class OperatorConfig(BaseModel):
-    """Configuration model for an operator (repairperson)."""
+    """Configuration model for all operators (repairpeople)."""
 
-    name: str = Field(..., description="The name of the operator.")
+    count: int = Field(2, description="The number of operators in the simulation.")
     walk_rate: float = Field(
         1.3, description="The walking rate of the operator (units: meters per second)."
     )
@@ -47,19 +46,19 @@ class EngineConfig(BaseConfig):
     """Configuration model for the simulation's engine."""
 
     horizon: int = Field(
-        MINUTES_IN_A_WEEK, description="The time horizon for the simulation in minutes."
+        default=MINUTES_IN_A_WEEK,
+        description="The time horizon for the simulation in minutes.",
     )
-    machines: List[MachineConfig] = Field(
-        ..., description="A list of machine configurations."
-    )
-    operators: List[OperatorConfig] = Field(
-        ..., description="A list of operator configurations."
-    )
+    machines: List[Machine] = Field(..., description="A list of machines.")
+    operators: List[Operator] = Field(..., description="A list of operators.")
 
 
 class RootConfig(BaseConfig):
     """Root configuration model for the repairperson simulator app."""
 
+    machine_config: MachineConfig = Field(
+        ..., description="The configuration for machines in the simulation."
+    )
     mean_processing_time: float = Field(
         10.0,
         description="The mean processing time for repairs (units: minutes).",
@@ -68,11 +67,8 @@ class RootConfig(BaseConfig):
         300.0,
         description="The mean time to failure for machines (units: minutes).",
     )
-    number_of_machines: int = Field(
-        5, description="The number of machines in the simulation."
-    )
-    number_of_operators: int = Field(
-        2, description="The number of operators in the simulation."
+    operator_config: OperatorConfig = Field(
+        ..., description="The configuration for operators in the simulation."
     )
     # TODO: need to add rngs using `numpy`
     seed: int = Field(42, description="The random seed for the simulation.")

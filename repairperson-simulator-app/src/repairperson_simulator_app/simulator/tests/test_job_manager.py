@@ -4,9 +4,9 @@ import pytest
 import simpy
 from typing import Callable
 
-from repairperson_simulator_app.constants import EventType, JobType, MachineStatus
+from repairperson_simulator_app.constants import EventType, JobType
 from repairperson_simulator_app.events import OnMachineBrokenEventDetails
-from repairperson_simulator_app.simulator.config import EngineConfig
+from repairperson_simulator_app.simulator.config import EngineConfig, RootConfig
 from repairperson_simulator_app.simulator.event_logger import EventLogger
 from repairperson_simulator_app.simulator.job_priority_store import JobPriorityStore
 from repairperson_simulator_app.simulator.job_manager import JobManager
@@ -21,14 +21,16 @@ def test_job_manager_initialization(
     event_logger: EventLogger,
     job_store: JobPriorityStore,
     randomizer_factory: Callable[..., Randomizer],
+    root_config: RootConfig,
 ):
     randomizer = randomizer_factory()
     machines = [
-        Machine(id=i, name=machine.name, env=env, randomizer=randomizer)
-        for i, machine in enumerate(engine_config.machines)
+        Machine(id=i, name=f"Machine {i}", env=env, randomizer=randomizer)
+        for i in range(root_config.machine_config.count)
     ]
 
-    job_manager = JobManager(engine_config, env, event_logger, job_store, machines)
+    engine_config.machines = machines
+    job_manager = JobManager(engine_config, env, event_logger, job_store)
 
     assert job_manager.engine_config == engine_config
     assert job_manager.env == env
@@ -45,14 +47,16 @@ def test_job_manager_on_machine_failure_creates_and_schedules_job(
     event_observer: EventObserver,
     job_store: JobPriorityStore,
     randomizer_factory: Callable[..., Randomizer],
+    root_config: RootConfig,
 ):
     randomizer = randomizer_factory()
     machines = [
-        Machine(id=i, name=machine.name, env=env, randomizer=randomizer)
-        for i, machine in enumerate(engine_config.machines)
+        Machine(id=i, name=f"Machine {i}", env=env, randomizer=randomizer)
+        for i in range(root_config.machine_config.count)
     ]
 
-    job_manager = JobManager(engine_config, env, event_logger, job_store, machines)
+    engine_config.machines = machines
+    job_manager = JobManager(engine_config, env, event_logger, job_store)
 
     spy = mocker.spy(job_manager, "on_machine_failure")
 
