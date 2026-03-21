@@ -21,11 +21,12 @@ def test_job_manager_initialization(
     event_logger: EventLogger,
     job_store: JobPriorityStore,
     randomizer_factory: Callable[..., Randomizer],
-    root_config: RootConfig,
+    root_config_factory: Callable[..., RootConfig],
 ):
-    randomizer = randomizer_factory()
+    root_config = root_config_factory()
+    randomizer = randomizer_factory(root_config)
     machines = [
-        Machine(id=i, name=f"Machine {i}", env=env, randomizer=randomizer)
+        Machine(env, root_config, randomizer, id=i, name=f"Machine {i}")
         for i in range(root_config.machine_config.count)
     ]
 
@@ -46,11 +47,12 @@ def test_job_manager_handle_machine_failure_creates_and_schedules_job(
     event_observer: EventObserver,
     job_store: JobPriorityStore,
     randomizer_factory: Callable[..., Randomizer],
-    root_config: RootConfig,
+    root_config_factory: Callable[..., RootConfig],
 ):
-    randomizer = randomizer_factory()
+    root_config = root_config_factory()
+    randomizer = randomizer_factory(root_config)
     machines = [
-        Machine(id=i, name=f"Machine {i}", env=env, randomizer=randomizer)
+        Machine(env, root_config, randomizer, id=i, name=f"Machine {i}")
         for i in range(root_config.machine_config.count)
     ]
 

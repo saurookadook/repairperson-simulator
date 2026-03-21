@@ -66,15 +66,17 @@ def randomizer_factory() -> Callable[..., Randomizer]:
 
     def factory(root_config: RootConfig = RootConfigFactory()):
         return Randomizer(
-            mean_processing_time=root_config.mean_processing_time,
-            mean_time_to_failure=root_config.mean_time_to_failure,
-            sigma_processing_time=root_config.sigma_processing_time,
+            root_config=root_config,
         )
 
     return factory
 
 
 @pytest.fixture
-def root_config():
+def root_config_factory():
     """Provides a default `RootConfig` from `RootConfigFactory` for tests."""
-    return RootConfigFactory()
+
+    def factory():
+        return RootConfigFactory()
+
+    return factory

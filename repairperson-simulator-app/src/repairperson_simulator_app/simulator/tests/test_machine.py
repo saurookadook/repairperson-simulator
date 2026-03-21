@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 import simpy
-from typing import Callable
+from typing import TYPE_CHECKING, Callable
 
 from repairperson_simulator_app.simulator.machine import Machine
 from repairperson_simulator_app.simulator.randomizer import Randomizer
@@ -10,13 +10,18 @@ from repairperson_simulator_app.test_factories.config import (
     HighFailureRateRootConfigFactory,
 )
 
+if TYPE_CHECKING:
+    from repairperson_simulator_app.simulator.config import RootConfig
+
 
 def test_machine_initialization(
     env: simpy.Environment,
     randomizer_factory: Callable[..., Randomizer],
+    root_config_factory: Callable[..., RootConfig],
 ):
-    randomizer = randomizer_factory()
-    machine = Machine(id=1, name="Test Machine", env=env, randomizer=randomizer)
+    root_config = root_config_factory()
+    randomizer = randomizer_factory(root_config)
+    machine = Machine(env, root_config, randomizer, id=1, name="Test Machine")
 
     assert machine.id == 1
     assert machine.name == "Test Machine"
@@ -29,8 +34,9 @@ def test_machine_breakdown_process(
     env: simpy.Environment,
     randomizer_factory: Callable[..., Randomizer],
 ):
-    randomizer = randomizer_factory(HighFailureRateRootConfigFactory())
-    machine = Machine(id=1, name="Test Machine", env=env, randomizer=randomizer)
+    root_config = HighFailureRateRootConfigFactory()
+    randomizer = randomizer_factory(root_config)
+    machine = Machine(env, root_config, randomizer, id=1, name="Test Machine")
 
     machine.start_work()
 

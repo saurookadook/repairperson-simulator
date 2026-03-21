@@ -66,8 +66,8 @@ class RootConfigFactory(factory.Factory):
     class Meta:
         model = RootConfig
 
-    fault_types_map = factory.LazyFunction(dict)
     fault_rngs_map = factory.LazyFunction(dict)
+    fault_types_map = factory.LazyFunction(dict)
     machine_config = factory.SubFactory(MachineConfigFactory)
     # mean_processing_time = 10.0
     # mean_time_to_failure = 300.0

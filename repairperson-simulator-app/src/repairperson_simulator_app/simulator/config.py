@@ -136,9 +136,15 @@ class FaultConfig(BaseConfig):
     )
     job_type: JobType = Field(..., description="The type of repair job needed.")
     rate_per_system_per_hour: float = Field(default=1.0)
+    rate_per_system_per_minute: float
     repair_time_in_min: float = Field(
         30.0, description="The time it takes to repair the machine (units: minutes)."
     )
+
+    @model_validator(mode="after")
+    def compute_rate_per_minute(self) -> FaultConfig:
+        self.rate_per_system_per_minute = self.rate_per_system_per_hour / 60.0
+        return self
 
 
 class MachineConfig(BaseConfig):
@@ -159,8 +165,8 @@ class OperatorConfig(BaseModel):
 class RootConfig(BaseConfig):
     """Root configuration model for the repairperson simulator app."""
 
-    fault_types_map: dict[FaultType, FaultDistributionConfig]
     fault_rngs_map: dict[RngKey, np.random.Generator] = Field(default_factory=dict)
+    fault_types_map: dict[FaultType, FaultConfig] = Field(default_factory=dict)
     machine_config: MachineConfig = Field(
         ..., description="The configuration for machines in the simulation."
     )

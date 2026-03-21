@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import simpy
+from typing import TYPE_CHECKING
 
 from repairperson_simulator_app.constants.enums import JobType
 from repairperson_simulator_app.constants.events import (
@@ -17,6 +18,11 @@ from repairperson_simulator_app.simulator.exceptions import MachineBrokenExcepti
 from repairperson_simulator_app.simulator.randomizer import Randomizer
 from repairperson_simulator_app.utils.event_observer import event_observer
 
+if TYPE_CHECKING:
+    from repairperson_simulator_app.constants.types import FaultType, SystemID
+    from repairperson_simulator_app.simulator.config import RootConfig
+
+
 logger: logging.Logger = logging.getLogger(__name__)
 
 
@@ -30,22 +36,30 @@ class Machine:
     """
 
     def __init__(
-        self, env: simpy.Environment, id: int, name: str, randomizer: Randomizer
+        self,
+        env: simpy.Environment,
+        root_config: RootConfig,
+        randomizer: Randomizer,
+        *,
+        id: SystemID,
+        name: str,
     ):
         self.env = env
         self.id = id
         self.name = name
-        self.is_broken = False
-        self.parts_made = 0
         self.randomizer = randomizer
+        self.root_config = root_config
 
         self.event_logger = EventLogger(self.env)
+        self.is_broken = False
+        self.parts_made = 0
         self._done_in = 0.0
 
     def start_work(self):
         """Start the machine's operation."""
         self.working_process = self.env.process(self.do_work())
-        self.env.process(self.intermittently_break())
+        for fault_type in self.root_config.fault_types_map.keys():
+            self.env.process(self.intermittently_break(fault_type))
         return self.working_process
 
     def do_work(self):
@@ -108,12 +122,16 @@ class Machine:
                 event_type=MachineLifecycleEventType.MACHINE_COMPLETED_PART.value,
             )
 
-    def intermittently_break(self):
+    def intermittently_break(self, fault_type: FaultType):
         """Break the machine at random intervals."""
         while True:
-            time_until_failure = self.randomizer.time_to_failure_in_seconds()
+            time_until_failure = (
+                self.randomizer.time_to_failure_in_minutes_for_system_and_fault_type(
+                    self.id, fault_type
+                )
+            )
             logger.debug(
-                f"Machine '{self.name}' will break in {time_until_failure:.2f} seconds. ({time_until_failure/60:.2f} minutes)"
+                f"Machine '{self.name}' will break in {time_until_failure:.2f} minutes. ({time_until_failure*60:.2f} seconds)"
             )
             yield self.env.timeout(time_until_failure)
             if not self.is_broken:
