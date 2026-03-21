@@ -1,11 +1,47 @@
 from __future__ import annotations
 
-from pydantic import BaseModel, ConfigDict, Field
-from typing import List
+import numpy as np
+from pydantic import BaseModel, ConfigDict, Field, model_validator
+from typing import Iterable, Optional
 
-from repairperson_simulator_app.constants import MINUTES_IN_A_WEEK
+from repairperson_simulator_app.constants import MINUTES_IN_A_WEEK, JobType
 from repairperson_simulator_app.simulator.entities import Operator
 from repairperson_simulator_app.simulator.machine import Machine
+
+SystemID = int
+FaultType = str
+RngKey = tuple[SystemID, FaultType]
+
+
+def spawn_rngs(
+    seed: int,
+    system_count: int,
+    fault_types: Iterable[FaultType],
+    *,
+    sequence_value: Optional[int] = None,
+) -> dict[RngKey, np.random.Generator]:
+    rngs: dict[RngKey, np.random.Generator] = dict()
+    seed = int(seed)
+    sorted_fault_types = sorted(fault_types)
+    for system_id in range(system_count):
+        entropy_seq = (
+            [seed, system_id]
+            if sequence_value is None
+            else [seed, system_id, sequence_value]
+        )
+        seed_seq = np.random.SeedSequence(entropy_seq)
+        seed_stream = seed_seq.spawn(len(sorted_fault_types))
+        for idx, fault_type in enumerate(sorted_fault_types):
+            rngs[(system_id, fault_type)] = np.random.default_rng(seed_stream[idx])
+    return rngs
+
+
+def spawn_event_rngs(
+    seed: int,
+    system_count: int,
+    fault_types: Iterable[FaultType],
+):
+    return spawn_rngs(seed, system_count, fault_types)
 
 
 class BaseConfig(BaseModel):
@@ -45,12 +81,25 @@ class OperatorConfig(BaseModel):
 class EngineConfig(BaseConfig):
     """Configuration model for the simulation's engine."""
 
+    fault_rngs: dict[RngKey, np.random.Generator] = Field(default_factory=dict)
     horizon_in_minutes: int = Field(
         default=MINUTES_IN_A_WEEK,
         description="The time horizon for the simulation in minutes.",
     )
-    machines: List[Machine] = Field(..., description="A list of machines.")
-    operators: List[Operator] = Field(..., description="A list of operators.")
+    machines: list[Machine] = Field(..., description="A list of machines.")
+    operators: list[Operator] = Field(..., description="A list of operators.")
+    seed: int = Field(42, description="The random seed for the simulation.")
+
+    @model_validator(mode="after")
+    def validated_related_fields(self) -> EngineConfig:
+        if not self.fault_rngs:
+            system_count = len(self.machines)
+            fault_types = [fault_type.name for fault_type in JobType]
+            self.fault_rngs = spawn_event_rngs(
+                self.seed, system_count, fault_types=fault_types
+            )
+
+        return self
 
 
 class RootConfig(BaseConfig):

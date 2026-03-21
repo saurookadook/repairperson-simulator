@@ -1,4 +1,4 @@
-from enum import Enum, auto
+from enum import Enum, StrEnum, auto
 
 
 class JobType(Enum):
@@ -9,7 +9,7 @@ class JobType(Enum):
     SOFTWARE_UPDATE = auto()
 
 
-class MachineStatus(Enum):
+class MachineStatus(StrEnum):
     BROKEN = auto()
     OPERATOR_EN_ROUTE = auto()
     NEEDS_MAINTENANCE = auto()
