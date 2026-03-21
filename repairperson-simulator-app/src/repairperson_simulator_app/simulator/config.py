@@ -15,9 +15,9 @@ from repairperson_simulator_app.constants import MINUTES_IN_A_WEEK, JobType
 from repairperson_simulator_app.constants.types import FaultType, RngKey
 from repairperson_simulator_app.simulator.entities import Operator
 from repairperson_simulator_app.simulator.machine import Machine
-from repairperson_simulator_app.utils.randomization import (
-    mu_sigma_from_median_cv,
-    mu_sigma_from_p50_p90,
+from repairperson_simulator_app.utils.stats_params import (
+    mu_and_sigma_from_median_and_cv,
+    mu_and_sigma_from_p50_and_p90,
 )
 
 
@@ -119,12 +119,12 @@ class FaultDistributionConfig(BaseConfig):
                 raise ValueError(
                     "'p50' and 'p90' must be provided when 'set_time_as' is 'percentiles'."
                 )
-            return mu_sigma_from_p50_p90(self.p50, self.p90)
+            return mu_and_sigma_from_p50_and_p90(self.p50, self.p90)
         if self.set_time is None or self.cv is None:
             raise ValueError(
                 "'set_time' and 'cv' must be provided when 'set_time_as' is not 'percentiles'."
             )
-        return mu_sigma_from_median_cv(self.set_time, self.cv)
+        return mu_and_sigma_from_median_and_cv(self.set_time, self.cv)
 
 
 class FaultConfig(BaseConfig):
