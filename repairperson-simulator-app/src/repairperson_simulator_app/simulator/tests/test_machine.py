@@ -27,7 +27,7 @@ def test_machine_initialization(
     assert machine.name == "Test Machine"
     assert machine.env == env
     assert machine.randomizer == randomizer
-    assert machine.is_broken is False
+    assert machine.wait_on_repair is None
 
 
 def test_machine_breakdown_process(
@@ -40,8 +40,8 @@ def test_machine_breakdown_process(
 
     machine.start_work()
 
-    simulation_duration = 1000  # seconds
+    simulation_duration = 1000  # minutes
 
     env.run(until=simulation_duration)
 
-    assert machine.is_broken is True
+    assert isinstance(machine.wait_on_repair, simpy.Event)

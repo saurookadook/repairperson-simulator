@@ -1,9 +1,10 @@
 from __future__ import annotations
 
 
-SystemID = int
 FaultType = str
-RngKey = tuple[SystemID, FaultType]
+MachineID = int
+JobTypeName = str
+RngKey = tuple[MachineID, JobTypeName]
 
 Severity = int
 Deadline = float

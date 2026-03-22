@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pytest
 import simpy
+from typing import Callable
 
 from repairperson_simulator_app.simulator.config import EngineConfig, RootConfig
 from repairperson_simulator_app.simulator.entities import Operator
@@ -11,8 +12,11 @@ from repairperson_simulator_app.simulator.operator_manager import OperatorManage
 
 
 def test_operator_manager_initialization(
-    engine_config: EngineConfig, env: simpy.Environment, root_config: RootConfig
+    engine_config: EngineConfig,
+    env: simpy.Environment,
+    root_config_factory: Callable[..., RootConfig],
 ):
+    root_config = root_config_factory()
     op_config = root_config.operator_config
     op_config.count = 3
     op_config.walk_rate = 1.2

@@ -6,19 +6,28 @@ from pydantic import (
     ConfigDict,
     Field,
     ValidationInfo,
+    computed_field,
     field_validator,
     model_validator,
 )
-from typing import Iterable, Optional
+from typing import Optional
 
 from repairperson_simulator_app.constants import MINUTES_IN_A_WEEK, JobType
-from repairperson_simulator_app.constants.types import FaultType, RngKey
+from repairperson_simulator_app.constants.types import (
+    FaultType,
+    RngKey,
+    MachineID,
+)
 from repairperson_simulator_app.simulator.entities import Operator
 from repairperson_simulator_app.simulator.machine import Machine
 from repairperson_simulator_app.utils.stats_params import (
     mu_and_sigma_from_median_and_cv,
     mu_and_sigma_from_p50_and_p90,
 )
+
+
+# TODO: delete me later :D
+from rich import inspect as ri
 
 
 def is_non_negative_number(value: float | int, info: ValidationInfo) -> float | int:
@@ -36,13 +45,12 @@ def is_positive_number(value: float | int, info: ValidationInfo) -> float | int:
 def spawn_rngs(
     seed: int,
     system_count: int,
-    fault_types: Iterable[FaultType],
     *,
     sequence_value: Optional[int] = None,
 ) -> dict[RngKey, np.random.Generator]:
     rngs: dict[RngKey, np.random.Generator] = dict()
     seed = int(seed)
-    sorted_fault_types = sorted(fault_types)
+    sorted_job_types = sorted([job_type.name for job_type in JobType])
     for system_id in range(system_count):
         entropy_seq = (
             [seed, system_id]
@@ -50,18 +58,27 @@ def spawn_rngs(
             else [seed, system_id, sequence_value]
         )
         seed_seq = np.random.SeedSequence(entropy_seq)
-        seed_stream = seed_seq.spawn(len(sorted_fault_types))
-        for idx, fault_type in enumerate(sorted_fault_types):
+        seed_stream = seed_seq.spawn(len(sorted_job_types))
+        for idx, fault_type in enumerate(sorted_job_types):
             rngs[(system_id, fault_type)] = np.random.default_rng(seed_stream[idx])
     return rngs
 
 
-def spawn_event_rngs(
+def spawn_event_rngs(seed: int, system_count: int) -> dict[RngKey, np.random.Generator]:
+    return spawn_rngs(seed, system_count)
+
+
+def spawn_machine_work_rngs(
     seed: int,
-    system_count: int,
-    fault_types: Iterable[FaultType],
-):
-    return spawn_rngs(seed, system_count, fault_types)
+    machine_count: int,
+) -> dict[MachineID, np.random.Generator]:
+    seed = int(seed)
+    rngs = dict()
+    for machine_id in range(machine_count):
+        entropy_seq = [seed, machine_id]
+        seed_seq = np.random.SeedSequence(entropy_seq)
+        rngs[machine_id] = np.random.default_rng(seed_seq)
+    return rngs
 
 
 class BaseConfig(BaseModel):
@@ -113,7 +130,7 @@ class FaultDistributionConfig(BaseConfig):
             return value
         return is_positive_number(value, info)
 
-    def to_mu_sigma(self) -> tuple[float, float]:
+    def get_mu_and_sigma(self) -> tuple[float, float]:
         if self.set_time_as == "percentiles":
             if self.p50 is None or self.p90 is None:
                 raise ValueError(
@@ -134,23 +151,36 @@ class FaultConfig(BaseConfig):
     distribution_cfg: FaultDistributionConfig = Field(
         default_factory=FaultDistributionConfig
     )
-    job_type: JobType = Field(..., description="The type of repair job needed.")
-    rate_per_system_per_hour: float = Field(default=1.0)
-    rate_per_system_per_minute: float
-    repair_time_in_min: float = Field(
-        30.0, description="The time it takes to repair the machine (units: minutes)."
+    job_type: JobType = Field(
+        JobType.MECHANICAL_MAINTENANCE, description="The type of repair job needed."
     )
+    rate_per_system_per_hour: float = Field(default=1.0)
 
-    @model_validator(mode="after")
-    def compute_rate_per_minute(self) -> FaultConfig:
-        self.rate_per_system_per_minute = self.rate_per_system_per_hour / 60.0
-        return self
+    @computed_field
+    @property
+    def rate_per_system_per_minute(self) -> float:
+        return self.rate_per_system_per_hour / 60.0
+
+    def sample_repair_time_in_minutes(self):
+        mu, sigma = self.distribution_cfg.get_mu_and_sigma()
+        return abs(np.random.lognormal(mean=mu, sigma=sigma))
 
 
 class MachineConfig(BaseConfig):
     """Configuration for all machines."""
 
     count: int = Field(5, description="The number of machines in the simulation.")
+    machine_work_rngs: dict[MachineID, np.random.Generator] = Field(
+        default_factory=dict
+    )
+    mean_processing_time: float = Field(
+        10.0,
+        description="The mean processing time for creating a new part. (units: minutes)",
+    )
+    sigma_processing_time: float = Field(
+        2.0,
+        description="The standard deviation of processing time for creating a new part. (units: minutes)",
+    )
 
 
 class OperatorConfig(BaseModel):
@@ -158,7 +188,7 @@ class OperatorConfig(BaseModel):
 
     count: int = Field(2, description="The number of operators in the simulation.")
     walk_rate: float = Field(
-        1.3, description="The walking rate of the operator (units: meters per second)."
+        1.3, description="The walking rate of the operator. (units: meters per second)"
     )
 
 
@@ -170,31 +200,45 @@ class RootConfig(BaseConfig):
     machine_config: MachineConfig = Field(
         ..., description="The configuration for machines in the simulation."
     )
-    # mean_processing_time: float = Field(
-    #     10.0,
-    #     description="The mean processing time for repairs (units: minutes).",
-    # )
-    # mean_time_to_failure: float = Field(
-    #     300.0,
-    #     description="The mean time to failure for machines (units: minutes).",
-    # )
     operator_config: OperatorConfig = Field(
         ..., description="The configuration for operators in the simulation."
     )
     seed: int = Field(42, description="The random seed for the simulation.")
-    # sigma_processing_time: float = Field(
-    #     2.0,
-    #     description="The standard deviation of processing time for repairs (units: minutes).",
-    # )
 
-    # TODO: move rng generation here?
     @model_validator(mode="after")
-    def validated_related_fields(self) -> RootConfig:
+    def validate_related_fields(self) -> RootConfig:
+        if not self.fault_types_map:
+            self.fault_types_map = dict(
+                ARM_FAILURE=FaultConfig(
+                    distribution_cfg=FaultDistributionConfig(
+                        set_time=10.0,
+                        cv=0.2,
+                    ),
+                    job_type=JobType.MECHANICAL_MAINTENANCE,
+                ),
+                LOOSE_WIRE=FaultConfig(
+                    distribution_cfg=FaultDistributionConfig(
+                        set_time=20.0,
+                        cv=0.4,
+                    ),
+                    job_type=JobType.ELECTRICAL_MAINTENANCE,
+                ),
+                SOFTWARE_FAILURE=FaultConfig(
+                    distribution_cfg=FaultDistributionConfig(
+                        set_time=5.0,
+                        cv=0.1,
+                    ),
+                    job_type=JobType.SOFTWARE_UPDATE,
+                ),
+            )
+
         if not self.fault_rngs_map:
             system_count = self.machine_config.count
-            fault_types = [fault_type.name for fault_type in JobType]
-            self.fault_rngs_map = spawn_event_rngs(
-                self.seed, system_count, fault_types=fault_types
+            self.fault_rngs_map = spawn_event_rngs(self.seed, system_count)
+
+        if not self.machine_config.machine_work_rngs:
+            self.machine_config.machine_work_rngs = spawn_machine_work_rngs(
+                self.seed, self.machine_config.count
             )
 
         return self

@@ -13,8 +13,6 @@ from repairperson_simulator_app.simulator.config import (
     OperatorConfig,
     RootConfig,
 )
-from repairperson_simulator_app.simulator.entities import Operator
-from repairperson_simulator_app.simulator.machine import Machine
 
 # TODO: better solution for this?
 DEFAULT_MACHINE_COUNT = 5
@@ -67,13 +65,34 @@ class RootConfigFactory(factory.Factory):
         model = RootConfig
 
     fault_rngs_map = factory.LazyFunction(dict)
-    fault_types_map = factory.LazyFunction(dict)
+    fault_types_map = factory.LazyFunction(
+        lambda: dict(
+            ARM_FAILURE=FaultConfigFactory(
+                distribution_cfg=FaultDistributionConfigFactory(
+                    set_time=10.0,
+                    cv=0.2,
+                ),
+                job_type=JobType.MECHANICAL_MAINTENANCE,
+            ),
+            LOOSE_WIRE=FaultConfigFactory(
+                distribution_cfg=FaultDistributionConfigFactory(
+                    set_time=20.0,
+                    cv=0.4,
+                ),
+                job_type=JobType.ELECTRICAL_MAINTENANCE,
+            ),
+            SOFTWARE_FAILURE=FaultConfigFactory(
+                distribution_cfg=FaultDistributionConfigFactory(
+                    set_time=5.0,
+                    cv=0.1,
+                ),
+                job_type=JobType.SOFTWARE_UPDATE,
+            ),
+        )
+    )
     machine_config = factory.SubFactory(MachineConfigFactory)
-    # mean_processing_time = 10.0
-    # mean_time_to_failure = 300.0
     operator_config = factory.SubFactory(OperatorConfigFactory)
     seed = 54320
-    # sigma_processing_time = 2.0
 
 
 class HighFailureRateRootConfigFactory(RootConfigFactory):
