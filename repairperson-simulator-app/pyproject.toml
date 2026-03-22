@@ -5,11 +5,7 @@ description = "A simulator for the repairperson problem using SimPy."
 readme = "README.md"
 authors = [{ name = "Andy Maskiell", email = "maskiella@gmail.com" }]
 requires-python = ">=3.12"
-dependencies = [
-    "numpy>=2.4.3",
-    "pydantic>=2.12.5",
-    "simpy>=4.1.1",
-]
+dependencies = ["numpy>=2.4.3", "pydantic>=2.12.5", "simpy>=4.1.1"]
 
 [project.scripts]
 repairperson-simulator-app = "repairperson_simulator_app:main"
@@ -33,8 +29,19 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
-addopts = ["-ra", "--color=yes", "--code-highlight=yes"]
+addopts = [
+    "-q",
+    "-ra", # all test output except passed tests
+    # "-rA", # all test output
+    "-s",
+    "-v",
+    "--color=yes",
+    "--code-highlight=yes",
+]
 loglevel = "DEBUG"
+markers = [
+    "integration: marks tests as an integration tests (run with '-m integration')",
+]
 python_files = ["tests/test_*.py", "tests/*_test.py"]
 required_plugins = ["pytest-sugar>=1.0.0,<2.0.0", "pytest-xdist>=3.5.0,<4.0.0"]
 testpaths = ["tests"]
