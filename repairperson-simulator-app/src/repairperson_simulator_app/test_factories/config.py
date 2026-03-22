@@ -13,13 +13,14 @@ from repairperson_simulator_app.simulator.config import (
     OperatorConfig,
     RootConfig,
 )
+from repairperson_simulator_app.test_factories.base import BaseMetaFactory
 
 # TODO: better solution for this?
 DEFAULT_MACHINE_COUNT = 5
 DEFAULT_OPERATOR_COUNT = 2
 
 
-class JobConfigFactory(factory.Factory):
+class JobConfigFactory(factory.Factory, metaclass=BaseMetaFactory[JobConfig]):
     class Meta:
         model = JobConfig
 
@@ -29,7 +30,9 @@ class JobConfigFactory(factory.Factory):
     remaining_duration = 30.0
 
 
-class FaultDistributionConfigFactory(factory.Factory):
+class FaultDistributionConfigFactory(
+    factory.Factory, metaclass=BaseMetaFactory[FaultDistributionConfig]
+):
     class Meta:
         model = FaultDistributionConfig
 
@@ -37,7 +40,7 @@ class FaultDistributionConfigFactory(factory.Factory):
     cv: Optional[float] = 0.2
 
 
-class FaultConfigFactory(factory.Factory):
+class FaultConfigFactory(factory.Factory, metaclass=BaseMetaFactory[FaultConfig]):
     class Meta:
         model = FaultConfig
 
@@ -45,14 +48,14 @@ class FaultConfigFactory(factory.Factory):
     job_type: JobType = JobType.SOFTWARE_UPDATE
 
 
-class MachineConfigFactory(factory.Factory):
+class MachineConfigFactory(factory.Factory, metaclass=BaseMetaFactory[MachineConfig]):
     class Meta:
         model = MachineConfig
 
     count = DEFAULT_MACHINE_COUNT
 
 
-class OperatorConfigFactory(factory.Factory):
+class OperatorConfigFactory(factory.Factory, metaclass=BaseMetaFactory[OperatorConfig]):
     class Meta:
         model = OperatorConfig
 
@@ -60,7 +63,7 @@ class OperatorConfigFactory(factory.Factory):
     walk_rate = 1.3
 
 
-class RootConfigFactory(factory.Factory):
+class RootConfigFactory(factory.Factory, metaclass=BaseMetaFactory[RootConfig]):
     class Meta:
         model = RootConfig
 
@@ -100,7 +103,7 @@ class HighFailureRateRootConfigFactory(RootConfigFactory):
     pass
 
 
-class EngineConfigFactory(factory.Factory):
+class EngineConfigFactory(factory.Factory, metaclass=BaseMetaFactory[EngineConfig]):
     class Meta:
         model = EngineConfig
 
