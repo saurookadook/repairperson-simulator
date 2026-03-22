@@ -197,6 +197,10 @@ class RootConfig(BaseConfig):
 
     fault_rngs_map: dict[RngKey, np.random.Generator] = Field(default_factory=dict)
     fault_types_map: dict[FaultType, FaultConfig] = Field(default_factory=dict)
+    horizon_in_minutes: int = Field(
+        default=MINUTES_IN_A_WEEK,
+        description="The time horizon for the simulation in minutes.",
+    )
     machine_config: MachineConfig = Field(
         ..., description="The configuration for machines in the simulation."
     )
@@ -248,7 +252,7 @@ class EngineConfig(BaseConfig):
     """Configuration model for the simulation's engine."""
 
     horizon_in_minutes: int = Field(
-        default=MINUTES_IN_A_WEEK,
+        ...,
         description="The time horizon for the simulation in minutes.",
     )
     machines: list[Machine] = Field(..., description="A list of machines.")

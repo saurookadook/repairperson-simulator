@@ -19,12 +19,12 @@ class JobManager(metaclass=SingletonMeta):
 
     def __init__(
         self,
-        engine_config: EngineConfig,
         env: simpy.Environment,
+        engine_config: EngineConfig,
         job_store: JobPriorityStore,
     ):
-        self.engine_config = engine_config
         self.env = env
+        self.engine_config = engine_config
         self.job_store = job_store
         self.machines = self.engine_config.machines
 
