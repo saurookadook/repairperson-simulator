@@ -12,7 +12,7 @@ from repairperson_simulator_app.simulator.operator_manager import OperatorManage
 
 
 def test_operator_manager_initialization(
-    engine_config: EngineConfig,
+    engine_config_factory: Callable[..., EngineConfig],
     env: simpy.Environment,
     root_config_factory: Callable[..., RootConfig],
 ):
@@ -21,6 +21,7 @@ def test_operator_manager_initialization(
     op_config.count = 3
     op_config.walk_rate = 1.2
 
+    engine_config = engine_config_factory()
     engine_config.operators = [
         Operator(id=i, name=f"Operator {i}", walk_rate=op_config.walk_rate)
         for i in range(op_config.count)

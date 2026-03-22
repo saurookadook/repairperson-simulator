@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 import simpy
-from typing import Callable
+from typing import Callable, Optional
 
 from repairperson_simulator_app.constants import EventType, JobType
 from repairperson_simulator_app.events import OnMachineBrokenEventDetails
@@ -16,7 +16,7 @@ from repairperson_simulator_app.utils.event_observer import EventObserver
 
 
 def test_job_manager_initialization(
-    engine_config: EngineConfig,
+    engine_config_factory: Callable[..., EngineConfig],
     env: simpy.Environment,
     event_logger: EventLogger,
     job_store: JobPriorityStore,
@@ -30,8 +30,9 @@ def test_job_manager_initialization(
         for i in range(root_config.machine_config.count)
     ]
 
+    engine_config = engine_config_factory()
     engine_config.machines = machines
-    job_manager = JobManager(engine_config, env, job_store)
+    job_manager = JobManager(env, engine_config, job_store)
 
     assert job_manager.engine_config == engine_config
     assert job_manager.env == env
@@ -42,7 +43,7 @@ def test_job_manager_initialization(
 
 def test_job_manager_handle_machine_failure_creates_and_schedules_job(
     mocker,
-    engine_config: EngineConfig,
+    engine_config_factory: Callable[..., EngineConfig],
     env: simpy.Environment,
     event_observer: EventObserver,
     job_store: JobPriorityStore,
@@ -56,8 +57,9 @@ def test_job_manager_handle_machine_failure_creates_and_schedules_job(
         for i in range(root_config.machine_config.count)
     ]
 
+    engine_config = engine_config_factory()
     engine_config.machines = machines
-    job_manager = JobManager(engine_config, env, job_store)
+    job_manager = JobManager(env, engine_config, job_store)
 
     spy = mocker.spy(job_manager, "handle_machine_failure")
 
