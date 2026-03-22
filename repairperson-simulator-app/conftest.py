@@ -4,7 +4,7 @@ import simpy
 from rich import inspect
 from typing import Callable
 
-from repairperson_simulator_app.simulator.config import RootConfig
+from repairperson_simulator_app.simulator.config import EngineConfig, RootConfig
 from repairperson_simulator_app.simulator.event_logger import EventLogger
 from repairperson_simulator_app.simulator.job_priority_store import JobPriorityStore
 from repairperson_simulator_app.simulator.randomizer import Randomizer
@@ -14,6 +14,7 @@ from repairperson_simulator_app.test_factories.config import (
 )
 from repairperson_simulator_app.utils.event_observer import EventObserver
 from repairperson_simulator_app.utils.logging import configure_logging
+
 
 test_logger: logging.Logger = configure_logging("TEST_LOGGER")
 
@@ -34,9 +35,13 @@ def event_observer() -> EventObserver:
 
 
 @pytest.fixture
-def engine_config():
+def engine_config_factory() -> Callable[..., EngineConfig]:
     """Provides a default `EngineConfig` from `EngineConfigFactory` for tests."""
-    return EngineConfigFactory()
+
+    def factory(**kwargs):
+        return EngineConfigFactory(**kwargs)
+
+    return factory
 
 
 @pytest.fixture
@@ -73,10 +78,10 @@ def randomizer_factory() -> Callable[..., Randomizer]:
 
 
 @pytest.fixture
-def root_config_factory():
+def root_config_factory() -> Callable[..., RootConfig]:
     """Provides a default `RootConfig` from `RootConfigFactory` for tests."""
 
-    def factory():
-        return RootConfigFactory()
+    def factory(**kwargs) -> RootConfig:
+        return RootConfigFactory(**kwargs)
 
     return factory
