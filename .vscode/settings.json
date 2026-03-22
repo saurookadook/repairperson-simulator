@@ -3,7 +3,10 @@
         "repairperson-simulator-app/.venv/lib/python3.12/site-packages"
     ],
     "python.analysis.typeCheckingMode": "basic",
+    "python.analysis.inlayHints.pytestParameters": true,
+    "python.languageServer": "Pylance",
     "python.testing.autoTestDiscoverOnSaveEnabled": true,
+    "python.testing.autoTestDiscoverOnSavePattern": "repairperson-simulator-app/**/test_*.py",
     // "python.testing.cwd": "./repairperson-simulator-app",
     "python.testing.pytestArgs": [
         "repairperson-simulator-app"
