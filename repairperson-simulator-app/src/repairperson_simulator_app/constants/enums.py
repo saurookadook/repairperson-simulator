@@ -12,5 +12,5 @@ class JobType(Enum):
 class MachineStatus(StrEnum):
     BROKEN = auto()
     OPERATOR_EN_ROUTE = auto()
-    NEEDS_MAINTENANCE = auto()
+    NEEDS_MAINTENANCE = auto()  # TODO: unnecessary...?
     WORKING = auto()

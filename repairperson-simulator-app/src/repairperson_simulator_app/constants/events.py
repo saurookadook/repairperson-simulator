@@ -4,6 +4,7 @@ from enum import Enum
 
 
 class EventType(Enum):
+    ON_ASSIGN_JOB = "on_assign_job"
     ON_HORIZON_REACHED = "on_horizon_reached"
     ON_JOB_ASSIGNED = "on_job_assigned"
     ON_JOB_COMPLETED = "on_job_completed"
