@@ -3,6 +3,8 @@ from __future__ import annotations
 import simpy
 from typing import TYPE_CHECKING, Optional
 
+from repairperson_simulator_app.constants import HORIZON_END
+
 if TYPE_CHECKING:
     from repairperson_simulator_app.constants.enums import JobType
     from repairperson_simulator_app.constants.types import FaultType
@@ -13,7 +15,10 @@ class HorizonReached(simpy.Interrupt):
     """Exception raised when the simulation reaches its time horizon."""
 
     def __init__(
-        self, message="Horizon reached", should_bubble: bool = False, **kwargs
+        self,
+        message=HORIZON_END,
+        should_bubble: bool = False,
+        **kwargs,
     ):
         super().__init__(message, **kwargs)
         self.should_bubble = should_bubble
