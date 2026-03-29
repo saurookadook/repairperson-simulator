@@ -28,9 +28,22 @@ class OnMachineBrokenEvent(Event):
         timestamp: float,
         details: OnMachineBrokenEventDetails,
     ):
-        machine = getattr(self, "details", {}).get("machine", None)
-        if machine is None:
-            raise ValueError("OnMachineBrokenEvent requires 'machine' in details.")
+        if details is None:
+            raise ValueError(
+                f"`{self.__class__.__name__}` requires 'details' argument."
+            )
+        if getattr(details, "machine", None) is None:
+            raise ValueError(
+                f"`{self.__class__.__name__}` - 'details' requires 'machine' attribute."
+            )
+        if getattr(details, "job_type", None) is None:
+            raise ValueError(
+                f"`{self.__class__.__name__}` - 'details' requires 'job_type' attribute."
+            )
+        if getattr(details, "repair_time_in_min", None) is None:
+            raise ValueError(
+                f"`{self.__class__.__name__}` - 'details' requires 'repair_time_in_min' attribute."
+            )
 
         super().__init__(type=type, timestamp=timestamp, details=details)
         self.details = details
