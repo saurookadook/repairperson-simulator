@@ -1,14 +1,18 @@
 from __future__ import annotations
 
+import inspect
 from functools import wraps
 from typing import Any, Callable, Generator
 
-
+from repairperson_simulator_app.constants import HORIZON_END
 from repairperson_simulator_app.simulator.exceptions import HorizonReached
 
 
 def is_horizon_reached_exception(exception: Exception) -> bool:
-    return isinstance(exception, HorizonReached)
+    return (
+        isinstance(exception, HorizonReached)
+        or getattr(exception, "cause", None) == HORIZON_END
+    )
 
 
 def should_raise_horizon_reached_exception(exception: Exception) -> bool:
@@ -45,7 +49,6 @@ def event_details_guard(event_details_type):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            _self = args[0]
             event = kwargs["details"] if "event" in kwargs else args[1]
             details = event.details
             if not isinstance(details, event_details_type):
@@ -66,25 +69,30 @@ def event_details_guard(event_details_type):
 
 
 def horizon_guard(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs) -> Generator[Any, Any, Any | None]:
-        call_result = func(*args, **kwargs)
-        if hasattr(call_result, "__next__"):
+    if inspect.isgeneratorfunction(func):
+
+        @wraps(func)
+        def generator_wrapper(*args, **kwargs) -> Generator[Any, Any, Any | None]:
             try:
                 # delegate to inner generator
-                yield from call_result
+                yield from func(*args, **kwargs)
             except Exception as e:
                 if not is_horizon_reached_exception(
                     e
                 ) or should_raise_horizon_reached_exception(e):
                     raise
 
-        try:
-            return call_result
-        except Exception as e:
-            if not is_horizon_reached_exception(
-                e
-            ) or should_raise_horizon_reached_exception(e):
-                raise
+        return generator_wrapper
+    else:
 
-    return wrapper
+        @wraps(func)
+        def sync_wrapper(*args, **kwargs) -> Any | None:
+            try:
+                return func(*args, **kwargs)
+            except Exception as e:
+                if not is_horizon_reached_exception(
+                    e
+                ) or should_raise_horizon_reached_exception(e):
+                    raise
+
+        return sync_wrapper

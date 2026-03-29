@@ -48,3 +48,47 @@ def test_machine_mediator_initialization(
 
     assert isinstance(mediator.event_logger, EventLogger)
     assert mediator.working_processes == []
+
+
+def test_machine_mediator_stops_all_machines_at_horizon(
+    engine_config_factory: Callable[..., EngineConfig],
+    env: simpy.Environment,
+    root_config_factory: Callable[..., RootConfig],
+):
+    root_config = root_config_factory()
+    machine_config = root_config.machine_config
+    machines = [
+        Machine(
+            env=env,
+            root_config=root_config,
+            id=i,
+            name=f"Machine {i}",
+            randomizer=Randomizer(root_config=root_config),
+        )
+        for i in range(machine_config.count)
+    ]
+
+    engine_config = engine_config_factory()
+
+    job_manager = JobManager(
+        env,
+        engine_config,
+        job_store=JobPriorityStore(env),
+    )
+
+    mediator = MachineMediator(env, root_config, job_manager, machines)
+
+    mediator.start_all_machines()
+
+    env.run(until=root_config.horizon_in_minutes + 1)
+
+    for registry_entry in mediator.machine_registry.values():
+        fault_processes = registry_entry.fault_processes
+        working_process = registry_entry.working_process
+
+        for fault_process in fault_processes:
+            assert not fault_process.is_alive, f"{fault_process} was not stopped"
+
+        assert (
+            working_process is None or not working_process.is_alive
+        ), f"{working_process} was not stopped"

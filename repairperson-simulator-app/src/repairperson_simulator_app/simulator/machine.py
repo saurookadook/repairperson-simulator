@@ -4,22 +4,24 @@ import logging
 import simpy
 from typing import TYPE_CHECKING
 
-from repairperson_simulator_app.constants.events import (
+from repairperson_simulator_app.constants import (
+    HORIZON_END,
     EventType,
     MachineLifecycleEventType,
 )
 from repairperson_simulator_app.simulator.event_logger import EventLogger
 from repairperson_simulator_app.events.machine_events import OnMachineBrokenEventDetails
-from repairperson_simulator_app.simulator.exceptions import MachineBrokenException
+from repairperson_simulator_app.simulator.exceptions import (
+    HorizonReached,
+    MachineBrokenException,
+)
 from repairperson_simulator_app.simulator.randomizer import Randomizer
+from repairperson_simulator_app.utils.decorators import horizon_guard
 from repairperson_simulator_app.utils.event_observer import event_observer
 
 if TYPE_CHECKING:
     from repairperson_simulator_app.constants.types import FaultType, MachineID
     from repairperson_simulator_app.simulator.config import RootConfig
-
-
-logger: logging.Logger = logging.getLogger(__name__)
 
 # TODO: delete me later :D
 from rich import inspect as ri
@@ -33,6 +35,8 @@ class Machine:
 
     A machine has a *name* and a number of *parts_made* thus far.
     """
+
+    working_process: simpy.Process
 
     def __init__(
         self,
@@ -51,17 +55,44 @@ class Machine:
 
         self.event_logger = EventLogger(self.env)
         self.is_broken = False
+        self.logger: logging.Logger = logging.getLogger(f"{__name__}.Machine-{id}")
+        self.logger.setLevel(logging.DEBUG)
         self.wait_on_repair: simpy.Event | None = None
         self.parts_made = 0
         self._done_in = 0.0
 
-    def start_work(self):
+        self.fault_processes: list[simpy.Process] = []
+
+    def start_work(self) -> Machine:
         """Start the machine's operation."""
         self.working_process = self.env.process(self.do_work())
-        for fault_type in self.root_config.fault_types_map.keys():
-            self.env.process(self.intermittently_break(fault_type))
-        return self.working_process
 
+        for fault_type in self.root_config.fault_types_map.keys():
+            fault_process = self.env.process(self.intermittently_break(fault_type))
+            self.fault_processes.append(fault_process)
+
+        return self
+
+    def cleanup_at_horizon_end(self):
+        self.logger.debug(
+            f"Cleaning up machine '{self.name}' processes at horizon end."
+        )
+        try:
+            self.logger.debug(f"Interrupting working process of machine '{self.name}'.")
+            self.working_process.interrupt(HORIZON_END)
+        except Exception:
+            pass
+
+        for i, process in enumerate(self.fault_processes):
+            try:
+                self.logger.debug(
+                    f"Interrupting fault process {i} of machine '{self.name}'."
+                )
+                process.interrupt(HORIZON_END)
+            except Exception:
+                pass
+
+    @horizon_guard
     def do_work(self):
         """Produce parts as long as the simulation runs.
 
@@ -80,13 +111,16 @@ class Machine:
 
         while True:
             self._done_in = self.randomizer.time_per_part(self.id)
-            while self._done_in:
+            while self._done_in > 0:
                 start = self.env.now
                 try:
                     yield self.env.timeout(self._done_in)
                     self._done_in = 0  # Set to 0 to exit while loop.
 
                 except simpy.Interrupt as exc:
+                    if HORIZON_END in str(exc.cause):
+                        raise HorizonReached()
+
                     fault_type = str(exc.cause)
                     fault_type_cfg = self.root_config.fault_types_map[fault_type]
 
@@ -119,6 +153,7 @@ class Machine:
                 event_type=MachineLifecycleEventType.MACHINE_COMPLETED_PART.value,
             )
 
+    @horizon_guard
     def intermittently_break(self, fault_type: FaultType):
         """Break the machine at random intervals."""
         while True:
@@ -128,7 +163,7 @@ class Machine:
                 )
             )
 
-            logger.debug(
+            self.logger.debug(
                 f"Machine '{self.name}' will break in {time_until_failure:.2f} minutes. ({time_until_failure*60:.2f} seconds)"
             )
             yield self.env.timeout(time_until_failure)
@@ -136,7 +171,7 @@ class Machine:
             if self.is_broken:
                 continue
 
-            logger.debug(
+            self.logger.debug(
                 f"Machine '{self.name}' broken at {self.env.now} seconds. ({self.env.now/60:.2f} minutes)"
             )
             self.working_process.interrupt(fault_type)
