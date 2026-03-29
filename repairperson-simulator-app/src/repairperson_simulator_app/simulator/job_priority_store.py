@@ -14,6 +14,10 @@ class JobPriorityStore(AbstractBaseStore):
         self.env = env
         self.store = simpy.PriorityStore(env)
 
+    @property
+    def items(self) -> list[Any]:
+        return self.store.items
+
     def get(self) -> StoreGet:
         """Get the highest priority job from the store."""
         return self.store.get()
@@ -22,9 +26,8 @@ class JobPriorityStore(AbstractBaseStore):
         """Put a job into the store with its priority."""
         return self.store.put(simpy.PriorityItem(job.priority, job))
 
-    @property
-    def items(self) -> list[Any]:
-        return self.store.items
+    def clear_items(self) -> None:
+        self.store.items.clear()
 
     def size(self) -> int:
         return len(self.store.items)

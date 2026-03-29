@@ -30,7 +30,7 @@ def rich_inspect():
 @pytest.fixture
 def event_observer() -> EventObserver:
     instance = EventObserver()
-    instance._registered_events = {}
+    instance.reset_all_registered_events()
     return instance
 
 
@@ -59,7 +59,9 @@ def event_logger(env: simpy.Environment):
 @pytest.fixture()
 def job_store(env: simpy.Environment):
     """Provides a `JobPriorityStore` for tests."""
-    return JobPriorityStore(env)
+    store = JobPriorityStore(env)
+    store.clear_items()
+    return store
 
 
 @pytest.fixture
