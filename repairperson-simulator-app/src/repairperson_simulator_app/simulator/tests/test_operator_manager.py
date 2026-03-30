@@ -7,6 +7,7 @@ from typing import Callable
 from repairperson_simulator_app.simulator.config import EngineConfig, RootConfig
 from repairperson_simulator_app.simulator.entities import Operator
 from repairperson_simulator_app.simulator.event_logger import EventLogger
+from repairperson_simulator_app.simulator.job_manager import JobManager
 from repairperson_simulator_app.simulator.job_priority_store import JobPriorityStore
 from repairperson_simulator_app.simulator.operator_manager import OperatorManager
 
@@ -28,7 +29,8 @@ def test_operator_manager_initialization(
     ]
 
     job_store = JobPriorityStore(env)
-    operator_manager = OperatorManager(engine_config, env, job_store)
+    job_manager = JobManager(env, engine_config, job_store)
+    operator_manager = OperatorManager(engine_config, env, job_manager)
 
     assert len(operator_manager.operators) == op_config.count
     for i, operator in enumerate(operator_manager.operators):
