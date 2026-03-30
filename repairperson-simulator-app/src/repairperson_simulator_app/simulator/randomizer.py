@@ -44,8 +44,8 @@ class Randomizer:
             "This method should be implemented based on the desired distribution."
         )
 
-    def time_to_failure_in_minutes_for_system_and_fault_type(
-        self, system_id: MachineID, fault_type: FaultType
+    def time_to_failure_in_minutes_for_machine_and_fault_type(
+        self, machine_id: MachineID, fault_type: FaultType
     ) -> float:
         """Generate a random time in minutes to failure for a machine based on the specified distribution."""
         fault_cfg = self.fault_types_map.get(fault_type, None)
@@ -54,6 +54,6 @@ class Randomizer:
                 f"No fault distribution config found for fault type: {fault_type}"
             )
 
-        rate_per_min = fault_cfg.rate_per_system_per_minute
-        rng = self.rngs_map[(system_id, fault_cfg.job_type.name)]
+        rate_per_min = fault_cfg.rate_per_machine_per_minute
+        rng = self.rngs_map[(machine_id, fault_cfg.job_type.name)]
         return rng.exponential(1.0 / rate_per_min)

@@ -64,7 +64,7 @@ class OperatorFilterStore(AbstractBaseStore):
         available_operators.sort(
             key=lambda op: (
                 # TODO: implement later
-                # self._get_distance_to_system(op, job.system_location),
+                # self._get_distance_to_machine(op, job.machine_location),
                 op.id,
             )
         )

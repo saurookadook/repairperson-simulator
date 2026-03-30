@@ -158,7 +158,7 @@ class Machine:
         """Break the machine at random intervals."""
         while True:
             time_until_failure = (
-                self.randomizer.time_to_failure_in_minutes_for_system_and_fault_type(
+                self.randomizer.time_to_failure_in_minutes_for_machine_and_fault_type(
                     self.id, fault_type
                 )
             )

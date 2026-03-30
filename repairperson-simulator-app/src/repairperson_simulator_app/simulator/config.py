@@ -44,28 +44,30 @@ def is_positive_number(value: float | int, info: ValidationInfo) -> float | int:
 
 def spawn_rngs(
     seed: int,
-    system_count: int,
+    machine_count: int,
     *,
     sequence_value: Optional[int] = None,
 ) -> dict[RngKey, np.random.Generator]:
     rngs: dict[RngKey, np.random.Generator] = dict()
     seed = int(seed)
     sorted_job_types = sorted([job_type.name for job_type in JobType])
-    for system_id in range(system_count):
+    for machine_id in range(machine_count):
         entropy_seq = (
-            [seed, system_id]
+            [seed, machine_id]
             if sequence_value is None
-            else [seed, system_id, sequence_value]
+            else [seed, machine_id, sequence_value]
         )
         seed_seq = np.random.SeedSequence(entropy_seq)
         seed_stream = seed_seq.spawn(len(sorted_job_types))
         for idx, fault_type in enumerate(sorted_job_types):
-            rngs[(system_id, fault_type)] = np.random.default_rng(seed_stream[idx])
+            rngs[(machine_id, fault_type)] = np.random.default_rng(seed_stream[idx])
     return rngs
 
 
-def spawn_event_rngs(seed: int, system_count: int) -> dict[RngKey, np.random.Generator]:
-    return spawn_rngs(seed, system_count)
+def spawn_event_rngs(
+    seed: int, machine_count: int
+) -> dict[RngKey, np.random.Generator]:
+    return spawn_rngs(seed, machine_count)
 
 
 def spawn_machine_work_rngs(
@@ -154,12 +156,12 @@ class FaultConfig(BaseConfig):
     job_type: JobType = Field(
         JobType.MECHANICAL_MAINTENANCE, description="The type of repair job needed."
     )
-    rate_per_system_per_hour: float = Field(default=1.0)
+    rate_per_machine_per_hour: float = Field(default=1.0)
 
     @computed_field
     @property
-    def rate_per_system_per_minute(self) -> float:
-        return self.rate_per_system_per_hour / 60.0
+    def rate_per_machine_per_minute(self) -> float:
+        return self.rate_per_machine_per_hour / 60.0
 
     def sample_repair_time_in_minutes(self):
         mu, sigma = self.distribution_cfg.get_mu_and_sigma()
@@ -237,8 +239,8 @@ class RootConfig(BaseConfig):
             )
 
         if not self.fault_rngs_map:
-            system_count = self.machine_config.count
-            self.fault_rngs_map = spawn_event_rngs(self.seed, system_count)
+            machine_count = self.machine_config.count
+            self.fault_rngs_map = spawn_event_rngs(self.seed, machine_count)
 
         if not self.machine_config.machine_work_rngs:
             self.machine_config.machine_work_rngs = spawn_machine_work_rngs(
