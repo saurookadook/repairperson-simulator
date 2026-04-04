@@ -9,6 +9,10 @@ from repairperson_simulator_app.simulator.entities import Operator
 from repairperson_simulator_app.simulator.event_logger import EventLogger
 from repairperson_simulator_app.simulator.job_manager import JobManager
 from repairperson_simulator_app.simulator.job_priority_store import JobPriorityStore
+from repairperson_simulator_app.simulator.machine_mediator import MachineMediator
+from repairperson_simulator_app.simulator.operator_filter_store import (
+    OperatorFilterStore,
+)
 from repairperson_simulator_app.simulator.operator_manager import OperatorManager
 
 
@@ -30,7 +34,18 @@ def test_operator_manager_initialization(
 
     job_store = JobPriorityStore(env)
     job_manager = JobManager(env, engine_config, job_store)
-    operator_manager = OperatorManager(engine_config, env, job_manager)
+    machine_mediator = MachineMediator(
+        env, root_config, job_manager, engine_config.machines
+    )
+    operator_filter_store = OperatorFilterStore(env, engine_config)
+    operator_manager = OperatorManager(
+        env,
+        engine_config,
+        root_config,
+        job_manager,
+        machine_mediator,
+        operator_filter_store,
+    )
 
     assert len(operator_manager.operators) == op_config.count
     for i, operator in enumerate(operator_manager.operators):

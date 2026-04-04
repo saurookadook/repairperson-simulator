@@ -50,6 +50,42 @@ class OperatorFilterStore(AbstractBaseStore):
     ) -> list[Operator]:
         return self._find_other_available_operators_for_job(job, excludable_operator)
 
+    def update_operator(self, operator_id: int, **kwargs) -> Operator:
+        operator = self.get_operator_by_id(operator_id)
+        for key, value in kwargs.items():
+            setattr(operator, key, value)
+        return operator
+
+    def update_operator_for_arrival_at_machine(
+        self, operator_id: int, machine_id: int
+    ) -> Operator:
+        operator = self.get_operator_by_id(operator_id)
+        operator.update_for_arrival_at_machine(machine_id)
+        return operator
+
+    def update_operator_for_job_start(self, operator_id: int, job: Job) -> Operator:
+        operator = self.get_operator_by_id(operator_id)
+        operator.update_for_job_start(job)
+        return operator
+
+    def update_operator_for_job_complete(self, operator_id: int) -> Operator:
+        operator = self.get_operator_by_id(operator_id)
+        operator.update_for_job_complete()
+        return operator
+
+    def update_operator_for_preemption(self, operator_id: int) -> Operator:
+        operator = self.update_operator_for_job_complete(operator_id)
+        operator.in_transit = False
+        return operator
+
+    def update_operator_on_return_to_resting_location(
+        self, operator_id: int, machine_id: int
+    ) -> Operator:
+        # TODO: implement later
+        operator = self.get_operator_by_id(operator_id)
+        operator.machine_location = machine_id
+        return operator
+
     def _find_available_operators_for_job(self, job: Job) -> list[Operator]:
         available_operators: list[Operator] = []
 
@@ -63,8 +99,7 @@ class OperatorFilterStore(AbstractBaseStore):
 
         available_operators.sort(
             key=lambda op: (
-                # TODO: implement later
-                # self._get_distance_to_machine(op, job.machine_location),
+                op.get_distance_to_machine(job.machine_id),
                 op.id,
             )
         )
@@ -95,8 +130,8 @@ class OperatorFilterStore(AbstractBaseStore):
     def size(self) -> int:
         return len(self.store.items)
 
-    def get_operator_by_id(self, operator_id: int) -> Operator | None:
-        for operator in self.store.items:
-            if operator.id == operator_id:
-                return operator
-        return None
+    def get_operator_by_id(self, operator_id: int) -> Operator:
+        """
+        Gets an ``Operator`` by ID directly from ``self.operators`` list, not from the store.
+        """
+        return self.operators[operator_id]
