@@ -245,3 +245,31 @@ class OperatorManager:
             return False
 
         return operator.is_available_for_job(maybe_higher_job)
+
+    def _is_closest_interruptible_operator_to_machine(
+        self, target_operator: Operator, job: Job
+    ) -> bool:
+        """
+        Returns ``True`` if ``target_operator`` can reach ``job.machine_id`` and there is no other
+        interruptible ``Operator`` that can also reach ``job.machine_id`` and is either closer to it
+        or at the same distance with a smaller ``id`` than ``target_operator``.
+        """
+
+        target_distance = target_operator.get_distance_to_machine(job.machine_id)
+
+        for operator in self.operator_filter_store.operators:
+            if operator.id == target_operator.id:
+                continue
+
+            if not operator.is_interruptible():
+                continue
+
+            operator_distance = operator.get_distance_to_machine(job.machine_id)
+
+            if operator_distance < target_distance or (
+                operator_distance == target_distance
+                and operator.id < target_operator.id
+            ):
+                return False
+
+        return True

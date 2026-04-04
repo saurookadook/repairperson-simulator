@@ -53,3 +53,27 @@ def test_operator_manager_initialization(
         assert operator.name == f"Operator {i}"
         assert operator.walk_rate == op_config.walk_rate
         assert operator.current_job_id is None
+
+
+def test_operator_manager_should_work_be_preempted_two_ops_other_op_free():
+    pass
+
+
+def test_operator_manager_should_work_be_preempted_two_ops_same_job():
+    pass
+
+
+def test_operator_manager_should_work_be_preempted_two_ops_same_job_priority_different_locations():
+    pass
+
+
+def test_operator_manager_should_work_be_preempted_two_ops_equidistant_different_job_priorities():
+    pass
+
+
+def test_operator_manager_should_work_be_preempted_two_ops_both_have_higher_priority_jobs():
+    pass
+
+
+def test_operator_manager_is_closest_interruptible_operator_to_machine():
+    pass
