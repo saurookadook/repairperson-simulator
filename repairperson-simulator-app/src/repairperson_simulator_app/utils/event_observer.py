@@ -35,6 +35,7 @@ class EventObserver(metaclass=SingletonMeta):
     def dispatch_event(self, event_type: str, details: Optional[dict] = None):
         """Dispatch an event to all registered listeners."""
         if event_type in self._registered_events:
+            # TODO: should logging just happen here...?
             event = Event(
                 type=event_type,
                 timestamp=dtime.now().timestamp(),
