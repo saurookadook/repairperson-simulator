@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 import simpy
-from typing import Callable, Optional
+from typing import Callable
 
 from repairperson_simulator_app.constants import EventType, JobType
 from repairperson_simulator_app.events import (
@@ -136,6 +136,7 @@ def test_job_manager_handle_machine_failure_dispatches_job_queued_event(
     job_queue_call_args = dispatch_spy.call_args_list[1]
     assert job_queue_call_args.args[0] == EventType.ON_JOB_QUEUED.value
     dispatch_call_details = job_queue_call_args.kwargs["details"]
+    assert dispatch_call_details is not None
     assert isinstance(dispatch_call_details, OnJobQueuedEventDetails)
-    assert dispatch_call_details.job_type == event_details.job_type
-    assert dispatch_call_details.machine == event_details.machine
+    assert dispatch_call_details.job.job_type == event_details.job_type
+    assert dispatch_call_details.job.machine_id == event_details.machine.id
