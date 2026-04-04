@@ -69,3 +69,6 @@ class MachineMediator:
 
         for machine in self.machines:
             machine.cleanup_at_horizon_end()
+
+    def get_machine_by_id(self, machine_id: int) -> Machine:
+        return self.machines[machine_id]
