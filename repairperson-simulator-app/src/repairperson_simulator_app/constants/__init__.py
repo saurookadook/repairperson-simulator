@@ -1,6 +1,7 @@
 from .enums import JobType, MachineStatus
 from .events import EventType, MachineLifecycleEventType
 from .interrupt_causes import HORIZON_END
+from .simulation import EVENT_POLLING_INTERVAL, MIN_POLLING_INTERVAL
 from .time_measurements import (
     HOURS_IN_A_DAY,
     MINUTES_IN_AN_HOUR,
@@ -16,11 +17,13 @@ from .types import (
 )
 
 __all__ = [
-    "MINUTES_IN_AN_HOUR",
-    "HOURS_IN_A_DAY",
+    "EVENT_POLLING_INTERVAL",
     "HORIZON_END",
+    "HOURS_IN_A_DAY",
+    "MIN_POLLING_INTERVAL",
     "MINUTES_IN_A_DAY",
     "MINUTES_IN_A_WEEK",
+    "MINUTES_IN_AN_HOUR",
     "Deadline",
     "EventType",
     "JobID",
