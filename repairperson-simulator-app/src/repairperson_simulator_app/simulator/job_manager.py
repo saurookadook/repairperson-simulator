@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import simpy
 from itertools import count
+from simpy.resources.store import StoreGet, StorePut
 from typing import List
 
 from repairperson_simulator_app.constants import EventType
@@ -10,7 +11,6 @@ from repairperson_simulator_app.events.job_events import OnJobQueuedEventDetails
 from repairperson_simulator_app.events.machine_events import OnMachineBrokenEventDetails
 from repairperson_simulator_app.simulator.config import EngineConfig
 from repairperson_simulator_app.simulator.entities import Job, calc_job_priority
-from repairperson_simulator_app.simulator.machine import Machine
 from repairperson_simulator_app.simulator.event_logger import EventLogger
 from repairperson_simulator_app.simulator.job_priority_store import JobPriorityStore
 from repairperson_simulator_app.utils.event_observer import event_observer
@@ -34,9 +34,12 @@ class JobManager:
         self.in_progress_jobs: List[Job] = []
         self._job_id = count()
 
-    def add_job(self, job):
+    def get_next_job(self) -> StoreGet:
+        return self.job_store.get()
+
+    def add_job(self, job) -> StorePut:
         priority = calc_job_priority(job)
-        self.job_store.put((priority, job))
+        return self.job_store.put((priority, job))
 
     def setup_listeners(self):
         event_observer.add_event_listener(
@@ -61,9 +64,8 @@ class JobManager:
             planned_duration=event.details.repair_time_in_min,
             remaining_duration=event.details.repair_time_in_min,
         )
-        self.job_store.put(job)
+        self.add_job(job)
 
         event_observer.dispatch_event(
-            EventType.ON_JOB_QUEUED.value,
-            details=OnJobQueuedEventDetails(job_type=job.job_type, machine=machine),
+            EventType.ON_JOB_QUEUED.value, details=OnJobQueuedEventDetails(job)
         )
