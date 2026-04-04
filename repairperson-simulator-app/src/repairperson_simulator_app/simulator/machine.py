@@ -8,7 +8,9 @@ from repairperson_simulator_app.constants import (
     HORIZON_END,
     EventType,
     MachineLifecycleEventType,
+    MachineStatus,
 )
+from repairperson_simulator_app.events.machine_events import OnMachineBrokenEventDetails
 from repairperson_simulator_app.simulator.event_logger import EventLogger
 from repairperson_simulator_app.events.machine_events import OnMachineBrokenEventDetails
 from repairperson_simulator_app.simulator.exceptions import (
@@ -53,10 +55,11 @@ class Machine:
         self.randomizer = randomizer
         self.root_config = root_config
 
-        self.event_logger = EventLogger(self.env)
-        self.is_broken = False
         self.logger: logging.Logger = logging.getLogger(f"{__name__}.Machine-{id}")
         self.logger.setLevel(logging.DEBUG)
+
+        self.event_logger = EventLogger(self.env)
+        self.status: MachineStatus = MachineStatus.IDLE
         self.wait_on_repair: simpy.Event | None = None
         self.parts_made = 0
         self._done_in = 0.0
@@ -111,8 +114,11 @@ class Machine:
 
         while True:
             self._done_in = self.randomizer.time_per_part(self.id)
+
             while self._done_in > 0:
                 start = self.env.now
+                self.status = MachineStatus.WORKING
+
                 try:
                     yield self.env.timeout(self._done_in)
                     self._done_in = 0  # Set to 0 to exit while loop.
@@ -124,22 +130,33 @@ class Machine:
                     fault_type = str(exc.cause)
                     fault_type_cfg = self.root_config.fault_types_map[fault_type]
 
-                    self.is_broken = True
+                    self.status = MachineStatus.BROKEN
                     self._done_in -= self.env.now - start
                     self.wait_on_repair = self.env.event()
 
+                    job_type = fault_type_cfg.job_type
+                    repair_time = fault_type_cfg.sample_repair_time_in_minutes()
+
+                    self.event_logger.log_event(
+                        event_type=EventType.ON_MACHINE_BROKEN.value,
+                        details=OnMachineBrokenEventDetails(
+                            machine=self,
+                            job_type=job_type,
+                            repair_time_in_min=repair_time,
+                        ),
+                    )
                     event_observer.dispatch_event(
                         EventType.ON_MACHINE_BROKEN.value,
                         details=OnMachineBrokenEventDetails(
                             machine=self,
-                            job_type=fault_type_cfg.job_type,
-                            repair_time_in_min=fault_type_cfg.sample_repair_time_in_minutes(),
+                            job_type=job_type,
+                            repair_time_in_min=repair_time,
                         ),
                     )
 
                     yield self.wait_on_repair
 
-                    self.is_broken = False
+                    self.status = MachineStatus.IDLE
                     self.wait_on_repair = None
                     continue
 
@@ -168,7 +185,7 @@ class Machine:
             )
             yield self.env.timeout(time_until_failure)
 
-            if self.is_broken:
+            if self.status == MachineStatus.BROKEN:
                 continue
 
             self.logger.debug(
