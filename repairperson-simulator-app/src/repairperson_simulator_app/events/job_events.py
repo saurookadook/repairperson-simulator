@@ -35,12 +35,28 @@ class BaseJobEvent(Event):
         super().__init__(event_type, timestamp, details)
         self.details = details
 
+    def get_csv_row(self) -> dict:
+        evt_details = getattr(self, "details")
+
+        return dict(
+            event_type=self.type,
+            timestamp=self.timestamp,
+            job_id=evt_details.job.id,
+            job_planned_duration=evt_details.job.planned_duration,
+            job_remaining_duration=evt_details.job.remaining_duration,
+            job_type=evt_details.job.job_type.value,
+            machine_id=evt_details.job.machine_id,
+            operator_id=evt_details.operator_id,
+            status=evt_details.status,
+        )
+
 
 # -------------------- ASSIGNED --------------------
 class OnJobAssignedEventDetails(BaseJobEventDetails):
 
-    def __init__(self, job: Job):
+    def __init__(self, job: Job, operator_id: int):
         super().__init__(job)
+        self.operator_id = operator_id
         self.status = MachineStatus.BROKEN
 
 

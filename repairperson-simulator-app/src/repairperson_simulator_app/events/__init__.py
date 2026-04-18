@@ -5,6 +5,7 @@ from .job_events import (
     OnJobAssignedEventDetails,
     OnJobCompletedEvent,
     OnJobCompletedEventDetails,
+    OnJobQueuedEvent,
     OnJobQueuedEventDetails,
 )
 
@@ -17,5 +18,6 @@ __all__ = [
     "OnJobAssignedEventDetails",
     "OnJobCompletedEvent",
     "OnJobCompletedEventDetails",
+    "OnJobQueuedEvent",
     "OnJobQueuedEventDetails",
 ]

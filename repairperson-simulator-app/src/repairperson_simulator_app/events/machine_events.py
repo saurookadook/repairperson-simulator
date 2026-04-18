@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from repairperson_simulator_app.constants.enums import JobType, MachineStatus
 from repairperson_simulator_app.events.base import Event
@@ -47,3 +47,17 @@ class OnMachineBrokenEvent(Event):
 
         super().__init__(type=type, timestamp=timestamp, details=details)
         self.details = details
+
+    def get_csv_row(self) -> dict:
+        evt_details = cast(OnMachineBrokenEventDetails, self.details)
+
+        return dict(
+            event_type=self.type,
+            timestamp=self.timestamp,
+            job_type=evt_details.job_type.value,
+            machine_id=evt_details.machine.id,
+            machine_name=evt_details.machine.name,
+            machine_parts_made=evt_details.machine.parts_made,
+            repair_time_in_min=evt_details.repair_time_in_min,
+            status=evt_details.status,
+        )
