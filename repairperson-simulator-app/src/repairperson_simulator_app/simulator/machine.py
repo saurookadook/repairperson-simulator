@@ -27,6 +27,7 @@ if TYPE_CHECKING:
 
 # TODO: delete me later :D
 from rich import inspect as ri
+from rich.pretty import pretty_repr as pr
 
 
 class Machine:
@@ -103,14 +104,16 @@ class Machine:
         Request a repairperson when this happens.
 
         """
-        self.event_logger.log_event(
+        wrk_start_kwargs = dict(
+            event_type=MachineLifecycleEventType.MACHINE_WORK_STARTED.value,
             details=dict(
                 machine_id=self.id,
                 machine_name=self.name,
                 parts_made=self.parts_made,
             ),
-            event_type=MachineLifecycleEventType.MACHINE_WORK_STARTED.value,
         )
+        self.logger.debug(pr(wrk_start_kwargs))
+        self.event_logger.log_event(**wrk_start_kwargs)  # type: ignore
 
         while True:
             self._done_in = self.randomizer.time_per_part(self.id)
@@ -137,7 +140,7 @@ class Machine:
                     job_type = fault_type_cfg.job_type
                     repair_time = fault_type_cfg.sample_repair_time_in_minutes()
 
-                    self.event_logger.log_event(
+                    evt_kwargs = dict(
                         event_type=EventType.ON_MACHINE_BROKEN.value,
                         details=OnMachineBrokenEventDetails(
                             machine=self,
@@ -145,20 +148,16 @@ class Machine:
                             repair_time_in_min=repair_time,
                         ),
                     )
-                    event_observer.dispatch_event(
-                        EventType.ON_MACHINE_BROKEN.value,
-                        details=OnMachineBrokenEventDetails(
-                            machine=self,
-                            job_type=job_type,
-                            repair_time_in_min=repair_time,
-                        ),
-                    )
+
+                    self.logger.debug(pr(evt_kwargs))
+                    self.event_logger.log_event(**evt_kwargs)  # type: ignore
+                    event_observer.dispatch_event(**evt_kwargs)  # type: ignore
 
                     yield self.wait_on_repair
 
                     self.status = MachineStatus.IDLE
                     self.wait_on_repair = None
-                    continue
+                    break
 
             self.parts_made += 1
             self.event_logger.log_event(
@@ -180,9 +179,9 @@ class Machine:
                 )
             )
 
-            self.logger.debug(
-                f"Machine '{self.name}' will break in {time_until_failure:.2f} minutes. ({time_until_failure*60:.2f} seconds)"
-            )
+            # self.logger.debug(
+            #     f"Machine '{self.name}' will break in {time_until_failure:.2f} minutes. ({time_until_failure*60:.2f} seconds)"
+            # )
             yield self.env.timeout(time_until_failure)
 
             if self.status == MachineStatus.BROKEN:
