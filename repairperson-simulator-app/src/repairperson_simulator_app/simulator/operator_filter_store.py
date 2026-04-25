@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import simpy
 from copy import deepcopy
 from simpy.resources.store import StoreGet, StorePut
@@ -10,6 +11,10 @@ from repairperson_simulator_app.simulator.entities import Job, Operator
 from repairperson_simulator_app.simulator.event_logger import EventLogger
 from repairperson_simulator_app.simulator.interfaces import AbstractBaseStore
 
+# TODO: delete me later :D
+from rich import inspect as ri
+from rich.pretty import pretty_repr as pr
+
 
 class OperatorFilterStore(AbstractBaseStore):
     """A custom SimPy store that allows for filtering operators based on criteria."""
@@ -18,6 +23,8 @@ class OperatorFilterStore(AbstractBaseStore):
         self.env = env
         self.engine_config = engine_config
         self.store = simpy.FilterStore(env)
+
+        self.logger: logging.Logger = logging.getLogger(self.__class__.__name__)
 
         self.event_logger = EventLogger(self.env)
         # TODO: maybe deep copy?
@@ -34,6 +41,12 @@ class OperatorFilterStore(AbstractBaseStore):
         return self.get(lambda op: op.id == operator_id)
 
     def get_first_available_for_job(self, job: Job) -> StoreGet | None:
+        self.logger.debug(
+            f"    Getting first available operator for job '{job.id}'    ".center(
+                180, "*"
+            )
+        )
+        self.logger.debug(f"operator store size: {self.size()}")
         if self.size() == 0:
             return None
 
@@ -94,7 +107,24 @@ class OperatorFilterStore(AbstractBaseStore):
         for operator in self.store.items:
             op_job_prio = operator.current_job_priority
 
-            if operator.is_available_for_job(job) or job_prio[:3] < op_job_prio[:3]:
+            self.logger.debug(
+                pr(
+                    dict(
+                        job_priority=job_prio,
+                        operator_id=operator.id,
+                        operator_name=operator.name,
+                        operator_current_job_priority=op_job_prio,
+                        operator_is_available_for_job=operator.is_available_for_job(
+                            job
+                        ),
+                    )
+                )
+            )
+            if operator.is_available_for_job(job) or (
+                job_prio is not None
+                and op_job_prio is not None
+                and job_prio[:3] < op_job_prio[:3]
+            ):
                 available_operators.append(operator)
 
         available_operators.sort(
@@ -121,6 +151,7 @@ class OperatorFilterStore(AbstractBaseStore):
         self.operators[operator.id] = operator
         if any(op.id == operator.id for op in self.store.items):
             self.get_by_id_from_store(operator.id)
+        self.logger.debug(f"Operator '{operator.id}' put into store.")
         return self.store.put(operator)
 
     @property
