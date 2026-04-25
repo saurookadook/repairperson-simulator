@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 
 
-class EventType(Enum):
+class EventType(StrEnum):
     JOB_ADDED_TO_STORE = "job_added_to_store"
     JOB_STARTED = "job_started"
     ON_ASSIGN_OPERATOR_TO_JOB = "on_assign_operator_to_job"
@@ -17,6 +17,6 @@ class EventType(Enum):
     ON_SIMULATION_ENDED = "on_simulation_ended"
 
 
-class MachineLifecycleEventType(Enum):
+class MachineLifecycleEventType(StrEnum):
     MACHINE_WORK_STARTED = "machine_work_started"
     MACHINE_COMPLETED_PART = "machine_part_completed"
