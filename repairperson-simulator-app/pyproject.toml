@@ -51,4 +51,6 @@ testpaths = ["tests"]
 usefixtures = ["rich_inspect"]
 
 [tool.taskipy.tasks]
+simulate = { cmd = "python3 src/repairperson_simulator_app/simulator/main.py", help = "Run the simulation" }
+simulate_default = { cmd = "src/repairperson_simulator_app/simulator/main.py", help = "Run the simulation with default configuration values" }
 test = { cmd = "pytest", help = "Run the tests :D" }
