@@ -22,7 +22,8 @@ def job_factory() -> Callable[..., Job]:
             "planned_duration": 30.0,
             "remaining_duration": 30.0,
         }
-        return Job(**(defaults | overrides))
+        merged_dicts = defaults | overrides
+        return Job(**merged_dicts)
 
     return factory
 
@@ -151,4 +152,4 @@ def test_put_raises_attribute_error_when_item_has_no_priority(
     job_store: JobPriorityStore,
 ):
     with pytest.raises(AttributeError, match="priority"):
-        job_store.put(object())
+        job_store.put(object())  # type: ignore

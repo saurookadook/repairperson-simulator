@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 import simpy
+from copy import copy
+from heapq import heapify, heappop
 from simpy.resources.store import StoreGet, StorePut
 from typing import Any
 
+from repairperson_simulator_app.simulator.entities import Job
 from repairperson_simulator_app.simulator.interfaces import AbstractBaseStore
 
 
@@ -22,7 +25,7 @@ class JobPriorityStore(AbstractBaseStore):
         """Get the highest priority job from the store."""
         return self.store.get()
 
-    def put(self, job) -> StorePut:
+    def put(self, job: Job) -> StorePut:
         """Put a job into the store with its priority."""
         return self.store.put(simpy.PriorityItem(job.priority, job))
 
@@ -31,3 +34,15 @@ class JobPriorityStore(AbstractBaseStore):
 
     def size(self) -> int:
         return len(self.store.items)
+
+    def __contains__(self, target_job: Job):
+        job_items_heap = copy(self.store.items)
+        heapify(job_items_heap)
+
+        while len(job_items_heap) > 0:
+            _, job = heappop(job_items_heap)
+
+            if target_job.id == job.id:
+                return True
+
+        return False
