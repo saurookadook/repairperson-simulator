@@ -92,19 +92,22 @@ class Operator:
     name: str
     walk_rate: float  # in meters per second
     current_job: Job | None = None  # TODO: this might be easier than an `id`...?
-    current_job_id: JobID | None = None
     is_busy: bool = False
     in_transit: bool = False
     machine_location: Optional[int] = None
 
     @property
-    def current_job_priority(self) -> JobPriority | None:
+    def current_job_priority(self) -> JobPriority | tuple[float, float, float, float]:
         if self.current_job is None:
-            return None
+            return (inf, inf, inf, inf)
         return self.current_job.priority
 
     def get_machine_location(self) -> float:
-        return self.machine_location if self.machine_location is not None else inf
+        if self.machine_location is not None:
+            return self.machine_location
+        if self.current_job is not None:
+            return self.current_job.machine_id
+        return 0
 
     def get_distance_to_machine(self, machine_id: int) -> float:
         return abs(self.get_machine_location() - machine_id)
@@ -115,10 +118,12 @@ class Operator:
     def is_available_for_job(self, job: Job) -> bool:
         return (
             self.is_interruptible()
-            and self.current_job is not None
-            and self.current_job.id != job.id
-            and self.current_job_priority is not None
-            and job.priority[:3] < self.current_job_priority[:3]
+            or self.current_job is None
+            or (
+                self.current_job.id != job.id
+                and self.current_job_priority is not None
+                and job.priority[:3] < self.current_job_priority[:3]
+            )
         )
 
     def update_for_arrival_at_machine(self, machine_id: int) -> Operator:
@@ -129,13 +134,11 @@ class Operator:
 
     def update_for_job_start(self, job: Job) -> Operator:
         self.current_job = job
-        self.current_job_id = job.id
         self.is_busy = True
         return self
 
     def update_for_job_complete(self) -> Operator:
         self.current_job = None
-        self.current_job_id = None
         self.is_busy = False
         return self
 

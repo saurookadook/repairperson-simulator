@@ -52,7 +52,7 @@ def test_operator_manager_initialization(
         assert operator.id == i
         assert operator.name == f"Operator {i}"
         assert operator.walk_rate == op_config.walk_rate
-        assert operator.current_job_id is None
+        assert operator.current_job is None
 
 
 def test_operator_manager_should_work_be_preempted_two_ops_other_op_free():
