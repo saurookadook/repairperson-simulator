@@ -3,14 +3,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, cast
 
 from repairperson_simulator_app.constants.enums import JobType, MachineStatus
-from repairperson_simulator_app.events.base import Event
+from repairperson_simulator_app.events.base import Event, GenericEventDetails
 
 
 if TYPE_CHECKING:
     from repairperson_simulator_app.simulator.machine import Machine
 
 
-class OnMachineBrokenEventDetails(dict):
+class OnMachineBrokenEventDetails(GenericEventDetails):
     """Event triggered when a machine breaks down."""
 
     def __init__(self, machine: Machine, job_type: JobType, repair_time_in_min: float):

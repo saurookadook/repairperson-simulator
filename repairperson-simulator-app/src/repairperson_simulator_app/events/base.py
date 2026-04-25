@@ -2,7 +2,8 @@ from __future__ import annotations
 
 # from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Generic, Optional, TypeVar, cast
+from rich.pretty import pretty_repr as pr
+from typing import Generic, Optional, TypeVar
 
 
 Details = TypeVar("Details")
@@ -38,3 +39,8 @@ class Event(Generic[Details]):
                     row_dict[key] = value
 
         return row_dict
+
+
+class GenericEventDetails(dict):
+    def __repr__(self):
+        return pr(self.__dict__)

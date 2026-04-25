@@ -3,14 +3,18 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from repairperson_simulator_app.constants.enums import MachineStatus
-from repairperson_simulator_app.events.base import Event
+from repairperson_simulator_app.events.base import Event, GenericEventDetails
 
 
 if TYPE_CHECKING:
     from repairperson_simulator_app.simulator.entities import Job
 
+# TODO: delete me later :D
+from rich import inspect as ri
+from rich.pretty import pretty_repr as pr
 
-class BaseJobEventDetails(dict):
+
+class BaseJobEventDetails(GenericEventDetails):
 
     def __init__(self, job: Job):
         self.job = job
