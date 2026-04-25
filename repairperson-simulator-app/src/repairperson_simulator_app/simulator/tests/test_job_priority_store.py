@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import pytest
 import simpy
-from typing import Any, Callable
+from simpy.resources.store import PriorityItem
+from typing import Any, Callable, cast
 
 from repairperson_simulator_app.constants import JobType
 from repairperson_simulator_app.simulator.entities import Job
@@ -70,8 +71,9 @@ def test_get_yields_highest_priority_job(
     env.run(until=get_event)
 
     assert get_event.ok
-    assert get_event.value.priority == high_priority_job.priority
-    assert get_event.value.item is high_priority_job
+    evt_value = cast(PriorityItem, get_event.value)
+    assert evt_value.priority == high_priority_job.priority
+    assert evt_value.item is high_priority_job
     assert job_store.size() == 2
 
 
@@ -88,7 +90,8 @@ def test_get_from_empty_store_waits_until_item_is_available(
     env.run(until=get_event)
 
     assert get_event.triggered
-    assert get_event.value.item is queued_job
+    evt_value = cast(PriorityItem, get_event.value)
+    assert evt_value.item is queued_job
 
 
 def test_clear_items_removes_all_items(
