@@ -38,14 +38,17 @@ addopts = [
     "--color=yes",
     "--code-highlight=yes",
 ]
-loglevel = "DEBUG"
+log_cli = true
+log_level = "DEBUG"
 markers = [
-    "integration: marks tests as an integration tests (run with '-m integration')",
+    "integration: marks integration tests (run with '-m integration')",
+    "preemption: marks tests for operator preemption (run with '-m preemption')",
+    "resting_location: marks tests for operator resting location behavior (run with '-m resting_location')",
 ]
-python_files = ["tests/test_*.py", "tests/*_test.py"]
+python_files = ["tests/**/test_*.py", "tests/**/*_test.py"]
 required_plugins = ["pytest-sugar>=1.0.0,<2.0.0", "pytest-xdist>=3.5.0,<4.0.0"]
 testpaths = ["tests"]
-useFixtures = ["rich_inspect"]
+usefixtures = ["rich_inspect"]
 
 [tool.taskipy.tasks]
 test = { cmd = "pytest", help = "Run the tests :D" }
