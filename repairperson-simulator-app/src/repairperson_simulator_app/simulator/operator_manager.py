@@ -74,7 +74,7 @@ class OperatorManager:
                 180, "|"
             )
         )
-        # self.logger.debug(pr(dict(event_type=event.type, details=event.details)))
+        # self.logger.debug(f"\n{pr(dict(event_type=event.type, details=event.details))}")
         if event.details is None or event.details.job is None:
             raise ValueError(
                 f"[{self.handle_job_queued.__qualname__}] 'event' is missing details about job."
@@ -94,7 +94,7 @@ class OperatorManager:
                 180, "+"
             )
         )
-        self.logger.debug(pr(event))
+        self.logger.debug(f"\n{pr(event)}")
         self.logger.debug("+" * 180)
 
         if evt_details is None:
@@ -115,12 +115,12 @@ class OperatorManager:
             f"    Maybe dispatching operator for job '{job.id}'    ".center(180, "?")
         )
         _, job = yield self.job_manager.get_next_job()
-        # self.logger.debug(pr(dict(maybe_job=job)))
+        # self.logger.debug(f"\n{pr(dict(maybe_job=job))}")
         operator_get = self.operator_filter_store.get_first_available_for_job(job)
         self.logger.debug(
             f"    Found operator for job? '{type(operator_get)}'    ".center(180, "-")
         )
-        # self.logger.debug(pr(operator_get))
+        # self.logger.debug(f"\n{pr(operator_get)}")
         if operator_get is None:
             self.job_manager.re_put_job_to_store(job)
             return simpy.Event(self.env).succeed(
@@ -138,7 +138,7 @@ class OperatorManager:
                 180, "!"
             )
         )
-        self.logger.debug(pr(operator))
+        self.logger.debug(f"\n{pr(operator)}")
         self.logger.debug("!" * 180)
         event_observer.dispatch_event(
             details=OnJobAssignedEventDetails(job, operator_id=operator.id),
@@ -200,6 +200,27 @@ class OperatorManager:
             # TODO: implement this later
             # if self.job_manager.job_store.size() == 0:
             #     yield from self._return_to_resting_location(job, operator, machine)
+        else:
+            # self.logger.debug(f"\n{pr(job)}")
+            yield self.job_manager.put_job_to_store(job)
+
+        _, maybe_open_job = self.job_manager.peek_highest_priority_job()
+
+        if maybe_open_job is not None:
+            self.logger.debug(
+                f"    Operator '{operator.id}' checking for next job to work on after completing job '{job.id}'    ".center(
+                    180, "%"
+                )
+            )
+            self.logger.debug(f"\n{pr(maybe_open_job)}")
+            self.logger.debug("%" * 180)
+            # yield from self.maybe_dispatch_operator(maybe_open_job)
+            _, next_job = yield self.job_manager.get_next_job()
+            event_observer.dispatch_event(
+                details=OnJobAssignedEventDetails(next_job, operator_id=operator.id),
+                event_type=EventType.ON_ASSIGN_OPERATOR_TO_JOB.value,
+            )
+            return
 
         yield self.operator_filter_store.put(operator)
 

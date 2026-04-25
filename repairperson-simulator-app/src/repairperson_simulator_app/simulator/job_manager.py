@@ -2,11 +2,11 @@ from __future__ import annotations
 
 import logging
 import simpy
-from copy import deepcopy
+from copy import copy, deepcopy
 from heapq import heapify, heappop
 from itertools import count
-from simpy.resources.store import StoreGet, StorePut
-from typing import TYPE_CHECKING
+from simpy.resources.store import PriorityItem, StoreGet, StorePut
+from typing import TYPE_CHECKING, cast
 
 from repairperson_simulator_app.constants import EventType, JobPriority
 from repairperson_simulator_app.events.base import Event
@@ -68,6 +68,22 @@ class JobManager:
     def re_put_job_to_store(self, job: Job) -> StorePut:
         return self.put_job_to_store(job, should_log=False)
 
+    def peek_highest_priority_job(self) -> tuple[JobPriority, Job] | tuple[None, None]:
+        """Peek the job store for a higher priority job.
+
+        Returns:
+            A tuple of (priority, job) if a higher priority job is found, otherwise (None, None).
+        """
+        maybe_prio_job_tuple = (None, None)
+
+        if self.job_store.size() == 0:
+            return maybe_prio_job_tuple
+
+        job_items_heap = cast(list[PriorityItem], copy(self.job_store.items))
+        heapify(job_items_heap)
+
+        return job_items_heap[0]
+
     def peek_higher_priority_job_with_open_capacity(
         self, priority_key: JobPriority
     ) -> tuple[JobPriority, Job] | tuple[None, None]:
@@ -77,7 +93,7 @@ class JobManager:
         if not self.job_store.items:
             return maybe_prio_job_tuple
 
-        job_items_heap = deepcopy(self.job_store.items)
+        job_items_heap = cast(list[PriorityItem], deepcopy(self.job_store.items))
         heapify(job_items_heap)
 
         while job_items_heap:
@@ -88,7 +104,7 @@ class JobManager:
                 and len(job.assigned_operator_ids) == 0
                 # and len(job.assigned_operator_ids) < job.operator_capacity  # TODO: implement later :]
             ):
-                maybe_prio_job_tuple = (priority, job)
+                maybe_prio_job_tuple = cast(tuple[JobPriority, Job], (priority, job))
                 break
 
         return maybe_prio_job_tuple
