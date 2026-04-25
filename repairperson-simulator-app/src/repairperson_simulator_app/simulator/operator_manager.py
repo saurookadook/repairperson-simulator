@@ -5,7 +5,12 @@ import simpy
 from typing import TYPE_CHECKING, cast
 
 from repairperson_simulator_app.constants import EVENT_POLLING_INTERVAL, EventType
-from repairperson_simulator_app.events import Event
+from repairperson_simulator_app.events import (
+    Event,
+    OnJobAssignedEvent,
+    OnJobAssignedEventDetails,
+    OnJobQueuedEvent,
+)
 from repairperson_simulator_app.simulator.entities import Job, Operator
 from repairperson_simulator_app.simulator.event_logger import EventLogger
 from repairperson_simulator_app.utils.event_observer import event_observer
@@ -13,16 +18,16 @@ from repairperson_simulator_app.utils.event_observer import event_observer
 
 if TYPE_CHECKING:
     from repairperson_simulator_app.simulator.config import EngineConfig, RootConfig
-    from repairperson_simulator_app.events.job_events import (
-        OnJobAssignedEvent,
-        OnJobQueuedEvent,
-    )
     from repairperson_simulator_app.simulator.job_manager import JobManager
     from repairperson_simulator_app.simulator.machine import Machine
     from repairperson_simulator_app.simulator.machine_mediator import MachineMediator
     from repairperson_simulator_app.simulator.operator_filter_store import (
         OperatorFilterStore,
     )
+
+# TODO: delete me later :D
+from rich import inspect as ri
+from rich.pretty import pretty_repr as pr
 
 
 class OperatorManager:
@@ -64,48 +69,104 @@ class OperatorManager:
 
     def handle_job_queued(self, event: Event):
         event = cast(OnJobQueuedEvent, event)
-
+        self.logger.debug(
+            f"    {self.handle_job_queued.__qualname__} received event    ".center(
+                180, "|"
+            )
+        )
+        # self.logger.debug(pr(dict(event_type=event.type, details=event.details)))
         if event.details is None or event.details.job is None:
             raise ValueError(
                 f"[{self.handle_job_queued.__qualname__}] 'event' is missing details about job."
             )
-        self.maybe_dispatch_operator(event.details.job)
-        # priority, job = yield self.job_manager.get_next_job()
+        self.logger.debug(
+            f"    Maybe dispatching operator for job '{event.details.job.id}' in process    ".center(
+                180, "="
+            )
+        )
+        self.env.process(self.maybe_dispatch_operator(event.details.job))
 
     def handle_assign_operator_to_job(self, event: Event):
         event = cast(OnJobAssignedEvent, event)
+        evt_details = event.details
+        self.logger.debug(
+            f"    '{self.handle_assign_operator_to_job.__qualname__}'    ".center(
+                180, "+"
+            )
+        )
+        self.logger.debug(pr(event))
+        self.logger.debug("+" * 180)
 
-        if event.details is None or event.details.machine is None:
+        if evt_details is None:
             raise ValueError(
                 f"[{self.handle_assign_operator_to_job.__qualname__}] 'event' is missing details about broken machine."
             )
-        pass
 
-    def maybe_dispatch_operator(self, job: Job):
-        priority, job = yield self.job_manager.get_next_job()
-        operator_get = self.operator_filter_store.get_first_available_for_job(job)
-        if operator_get is None:
-            self.job_manager.re_put_job_to_store(job)
-            return
+        operator = self.operators[evt_details.operator_id]
+        job = evt_details.job
+        priority = job.priority
 
-        operator = yield operator_get
-        operator_process = self.env.process(
+        self.operator_processes[operator.id] = self.env.process(
             self.create_operator_process(operator, priority, job)
         )
-        self.operator_processes[operator.id] = operator_process
+
+    def maybe_dispatch_operator(self, job: Job):
+        self.logger.debug(
+            f"    Maybe dispatching operator for job '{job.id}'    ".center(180, "?")
+        )
+        _, job = yield self.job_manager.get_next_job()
+        # self.logger.debug(pr(dict(maybe_job=job)))
+        operator_get = self.operator_filter_store.get_first_available_for_job(job)
+        self.logger.debug(
+            f"    Found operator for job? '{type(operator_get)}'    ".center(180, "-")
+        )
+        # self.logger.debug(pr(operator_get))
+        if operator_get is None:
+            self.job_manager.re_put_job_to_store(job)
+            return simpy.Event(self.env).succeed(
+                f"No Operator found for job '{job.id}' at machine '{job.machine_id}'"
+            )
+            # .fail(
+            #     Exception(
+            #         f"No Operator found for job '{job.id}' at machine '{job.machine_id}'"
+            #     )
+            # )
+
+        operator = yield operator_get
+        self.logger.debug(
+            f"    Dispatching operator '{operator.id}' for job '{job.id}'    ".center(
+                180, "!"
+            )
+        )
+        self.logger.debug(pr(operator))
+        self.logger.debug("!" * 180)
+        event_observer.dispatch_event(
+            details=OnJobAssignedEventDetails(job, operator_id=operator.id),
+            event_type=EventType.ON_ASSIGN_OPERATOR_TO_JOB.value,
+        )
 
     def create_operator_process(self, operator: Operator, priority: int, job: Job):
         machine = self.machine_mediator.get_machine_by_id(job.machine_id)
+        self.logger.debug(
+            f"    Created process for operator '{operator.id}' for job '{job.id}' at machine '{machine.id}'    ".center(
+                180, "*"
+            )
+        )
 
         operator = self.operator_filter_store.update_operator(
-            operator.id, current_job=job
+            operator.id, current_job=job, machine_location=machine.id
         )
+        # ri(operator)
+        # breakpoint()
         job.add_operator_and_recalc_service_time(operator.id)
         # TODO: implement this later
         # if len(job.assigned_operator_ids) < machine.capacity:
         #     self.job_manager.re_put_job_to_store(job)
 
         walk_time_minutes = self._calc_walk_time(operator, job.machine_id)
+        self.logger.debug(
+            f"--------  Calculated walk time for operator '{operator.id}' to machine '{machine.id}': {walk_time_minutes:.2f} minutes"
+        )
         if walk_time_minutes > 0:
             yield self.env.timeout(walk_time_minutes)
 
@@ -113,9 +174,25 @@ class OperatorManager:
             operator.id, job.machine_id
         )
 
+        self.logger.debug(
+            f"--------  Starting service for job '{job.id}' with operator '{operator.id}' at machine '{machine.id}'"
+        )
         self._start_service(job, operator, machine)
 
         completed = yield from self._service_with_preemption(job, operator)
+        self.logger.debug(
+            f"   Service completed for job '{job.id}'? {completed}    ".center(180, "@")
+        )
+        self.logger.debug(
+            pr(
+                dict(
+                    completed=completed,
+                    job_id=job.id,
+                    machine_id=job.machine_id,
+                    operator_id=operator.id,
+                )
+            )
+        )
 
         if completed:
             self._complete_service(job, operator, machine)
@@ -182,7 +259,10 @@ class OperatorManager:
 
     def _calc_walk_time(self, operator: Operator, machine_id: int) -> float:
         travel_steps = abs(machine_id - operator.get_machine_location())
-        return travel_steps * self.root_config.operator_config.walk_rate
+        self.logger.debug(
+            f"    '{self._calc_walk_time.__qualname__}' :: {travel_steps=}, operator_walk_rate={operator.walk_rate}"
+        )
+        return travel_steps * operator.walk_rate
 
     def _calc_remaining_work_time(self, job: Job) -> float:
         return self._calc_remaining_time(job.remaining_duration)
@@ -226,10 +306,7 @@ class OperatorManager:
 
         priority_key = operator.current_job.priority
         maybe_higher_prio, maybe_higher_job = (
-            # TODO: implement method
-            self.job_manager.peek_higher_priority_queue_item_with_open_capacity(
-                priority_key
-            )
+            self.job_manager.peek_higher_priority_job_with_open_capacity(priority_key)
         )
 
         if maybe_higher_prio is None or maybe_higher_job is None:
