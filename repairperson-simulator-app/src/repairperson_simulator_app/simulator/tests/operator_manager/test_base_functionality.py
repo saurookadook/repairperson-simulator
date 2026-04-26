@@ -26,7 +26,7 @@ def test_operator_manager_initialization(
     op_config.count = 3
     op_config.walk_rate = 1.2
 
-    engine_config = engine_config_factory()
+    engine_config = engine_config_factory(env, root_config)
     engine_config.operators = [
         Operator(id=i, name=f"Operator {i}", walk_rate=op_config.walk_rate)
         for i in range(op_config.count)

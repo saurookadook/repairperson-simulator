@@ -4,25 +4,15 @@ import logging
 import pytest
 import simpy
 from collections import deque
-from typing import Any, Generator
+from typing import TYPE_CHECKING, Any, Generator
 
-from repairperson_simulator_app.constants import EventType, JobType
+from repairperson_simulator_app.constants import EventType
 from repairperson_simulator_app.events.job_events import OnJobQueuedEventDetails
-from repairperson_simulator_app.simulator.entities import Job, Operator
 from repairperson_simulator_app.simulator.job_manager import JobManager
-from repairperson_simulator_app.simulator.job_priority_store import JobPriorityStore
-from repairperson_simulator_app.simulator.machine import Machine
-from repairperson_simulator_app.simulator.machine_mediator import MachineMediator
-from repairperson_simulator_app.simulator.operator_filter_store import (
-    OperatorFilterStore,
-)
-from repairperson_simulator_app.simulator.operator_manager import OperatorManager
-from repairperson_simulator_app.simulator.randomizer import Randomizer
-from repairperson_simulator_app.test_factories.config import (
-    EngineConfigFactory,
-    RootConfigFactory,
-)
 from repairperson_simulator_app.utils.event_observer import event_observer
+
+if TYPE_CHECKING:
+    from repairperson_simulator_app.simulator.entities import Job
 
 
 local_logger: logging.Logger = logging.getLogger(__name__)
@@ -50,7 +40,9 @@ def schedule_jobs(
 
 
 @pytest.mark.preemption
-def test_operator_manager_handles_preemption_for_different_machines():
+def test_operator_manager_handles_preemption_for_different_machines(
+    env_and_root_config_factory, engine_config_factory, test_jobs, test_setup_factory
+):
     """
     Tests that the operator manager correctly handles job preemption based on priority.
 
@@ -60,60 +52,21 @@ def test_operator_manager_handles_preemption_for_different_machines():
     - Since no other operators are available and the new job has higher priority,
       the operator's current work should be preempted.
     """
-    env = simpy.Environment()
-    root_config = RootConfigFactory()
+    env, root_config = env_and_root_config_factory(operator_config__count=1)
+    engine_config = engine_config_factory(env, root_config)
 
-    randomizer = Randomizer(root_config=root_config)
-    machines = [
-        Machine(env, root_config, randomizer, id=0, name="Machine 0"),
-        Machine(env, root_config, randomizer, id=1, name="Machine 1"),
-    ]
-    operators = [Operator(id=0, name="Operator 0", walk_rate=0.0)]
-
-    engine_config = EngineConfigFactory(
-        horizon_in_minutes=100,
-        machines=machines,
-        operators=operators,
-    )
-
-    job_store = JobPriorityStore(env)
-    job_manager = JobManager(env, engine_config, job_store)
-    machine_mediator = MachineMediator(env, root_config, job_manager, machines)
-    operator_filter_store = OperatorFilterStore(env, engine_config)
-    operator_manager = OperatorManager(
-        env,
-        engine_config,
-        root_config,
-        job_manager,
-        machine_mediator,
-        operator_filter_store,
+    job_store, job_manager, operator_filter_store, operator_manager = (
+        test_setup_factory(env, root_config, engine_config)
     )
 
     event_observer.reset_all_registered_events()
     operator_manager.setup_listeners()
 
-    # SOFTWARE_UPDATE has severity=5 (lowest priority)
-    low_priority_job = Job(
-        created_at_ts=0.0,
-        id=0,
-        job_type=JobType.SOFTWARE_UPDATE,
-        machine_id=0,
-        planned_duration=15.0,
-        remaining_duration=15.0,
-    )
-
-    # ELECTRICAL_REPAIR has severity=1 (highest priority)
-    high_priority_job = Job(
-        created_at_ts=5,
-        id=1,
-        job_type=JobType.ELECTRICAL_REPAIR,
-        machine_id=1,
-        planned_duration=25.0,
-        remaining_duration=25.0,
-    )
-
-    env.process(schedule_jobs([low_priority_job, high_priority_job], job_manager, env))
+    env.process(schedule_jobs(test_jobs, job_manager, env))
     env.run(until=20)
+
+    low_priority_job = test_jobs[0]
+    high_priority_job = test_jobs[1]
 
     assert (
         not low_priority_job.is_completed
@@ -140,7 +93,57 @@ def test_operator_manager_handles_preemption_for_different_machines():
 
 
 @pytest.mark.preemption
-def test_operator_manager_handles_preemption_for_different_machines_and_resumes_preempted_jobs():
+def test_operator_manager_handles_preemption_exits_at_horizon(
+    env_and_root_config_factory, engine_config_factory, test_jobs, test_setup_factory
+):
+    """
+    Tests that the operator manager correctly handles job preemption based on
+    priority but exits at the simulation horizon.
+    """
+    env, root_config = env_and_root_config_factory(operator_config__count=1)
+    engine_config = engine_config_factory(env, root_config)
+
+    job_store, job_manager, operator_filter_store, operator_manager = (
+        test_setup_factory(env, root_config, engine_config)
+    )
+
+    event_observer.reset_all_registered_events()
+    operator_manager.setup_listeners()
+
+    env.process(schedule_jobs(test_jobs, job_manager, env))
+    env.run(until=20)
+
+    low_priority_job = test_jobs[0]
+    high_priority_job = test_jobs[1]
+
+    assert (
+        not low_priority_job.is_completed
+    ), "Low-priority job should not have been completed (preempted by higher priority job)"
+    assert (
+        low_priority_job.remaining_duration > 0
+    ), "Low-priority job should have remaining work after preemption"
+    assert (
+        low_priority_job.remaining_duration < low_priority_job.planned_duration
+    ), "Low-priority job should have had some work done before preemption"
+
+    operator = operator_filter_store.get_operator_by_id(0)
+    assert operator.is_busy, "Operator should be busy after preemption"
+    assert (
+        operator.current_job is high_priority_job
+    ), "Operator should be working on the high-priority job after preemption"
+
+    assert (
+        low_priority_job in job_store
+    ), "Low-priority job should still be in the job store"
+    assert (
+        high_priority_job not in job_store
+    ), "High-priority job should have been removed from the job store for assignment"
+
+
+@pytest.mark.preemption
+def test_operator_manager_handles_preemption_for_different_machines_and_resumes_preempted_jobs(
+    env_and_root_config_factory, engine_config_factory, test_jobs, test_setup_factory
+):
     """
     Tests that the operator manager correctly handles job preemption based on priority.
 
@@ -152,60 +155,21 @@ def test_operator_manager_handles_preemption_for_different_machines_and_resumes_
     - After the operator completes the high-priority job, they should resume work on the
       preempted low-priority job.
     """
-    env = simpy.Environment()
-    root_config = RootConfigFactory()
+    env, root_config = env_and_root_config_factory(operator_config__count=1)
+    engine_config = engine_config_factory(env, root_config)
 
-    randomizer = Randomizer(root_config=root_config)
-    machines = [
-        Machine(env, root_config, randomizer, id=0, name="Machine 0"),
-        Machine(env, root_config, randomizer, id=1, name="Machine 1"),
-    ]
-    operators = [Operator(id=0, name="Operator 0", walk_rate=0.0)]
-
-    engine_config = EngineConfigFactory(
-        horizon_in_minutes=100,
-        machines=machines,
-        operators=operators,
-    )
-
-    job_store = JobPriorityStore(env)
-    job_manager = JobManager(env, engine_config, job_store)
-    machine_mediator = MachineMediator(env, root_config, job_manager, machines)
-    operator_filter_store = OperatorFilterStore(env, engine_config)
-    operator_manager = OperatorManager(
-        env,
-        engine_config,
-        root_config,
-        job_manager,
-        machine_mediator,
-        operator_filter_store,
+    job_store, job_manager, operator_filter_store, operator_manager = (
+        test_setup_factory(env, root_config, engine_config)
     )
 
     event_observer.reset_all_registered_events()
     operator_manager.setup_listeners()
 
-    # SOFTWARE_UPDATE has severity=5 (lowest priority)
-    low_priority_job = Job(
-        created_at_ts=0.0,
-        id=0,
-        job_type=JobType.SOFTWARE_UPDATE,
-        machine_id=0,
-        planned_duration=15.0,
-        remaining_duration=15.0,
-    )
-
-    # ELECTRICAL_REPAIR has severity=1 (highest priority)
-    high_priority_job = Job(
-        created_at_ts=5,
-        id=1,
-        job_type=JobType.ELECTRICAL_REPAIR,
-        machine_id=1,
-        planned_duration=25.0,
-        remaining_duration=25.0,
-    )
-
-    env.process(schedule_jobs([low_priority_job, high_priority_job], job_manager, env))
+    env.process(schedule_jobs(test_jobs, job_manager, env))
     env.run(until=32)
+
+    low_priority_job = test_jobs[0]
+    high_priority_job = test_jobs[1]
 
     assert (
         high_priority_job.is_completed
@@ -226,15 +190,6 @@ def test_operator_manager_handles_preemption_for_different_machines_and_resumes_
     assert (
         low_priority_job not in job_store
     ), "Low-priority job should not be in the job store because it's assigned to the operator"
-
-
-@pytest.mark.preemption
-def test_operator_manager_handles_preemption_exits_at_horizon():
-    """
-    Tests that the operator manager correctly handles job preemption based on
-    priority but exits at the simulation horizon.
-    """
-    pass
 
 
 @pytest.mark.preemption
