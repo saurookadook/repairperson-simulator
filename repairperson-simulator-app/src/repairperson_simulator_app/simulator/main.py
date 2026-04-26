@@ -181,6 +181,6 @@ if __name__ == "__main__":
     console_handler.setFormatter(logging.Formatter(format_str, style="{"))
     root_logger.addHandler(console_handler)
 
-    root_logger.setLevel(logging.DEBUG)
+    root_logger.setLevel(logging.ERROR)
     print(f"Logging Level: {root_logger.getEffectiveLevel()}")
     simulator_main()

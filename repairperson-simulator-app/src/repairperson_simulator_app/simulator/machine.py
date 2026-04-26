@@ -153,10 +153,18 @@ class Machine:
                     self.event_logger.log_event(**evt_kwargs)  # type: ignore
                     event_observer.dispatch_event(**evt_kwargs)  # type: ignore
 
+                    self.logger.debug(
+                        f"\n{'?'*160}"
+                        f"\nMachine '{self.name}' is waiting for repair..."
+                        f"\n{'?'*160}"
+                    )
                     yield self.wait_on_repair
 
                     self.status = MachineStatus.IDLE
                     self.wait_on_repair = None
+                    self.logger.debug(
+                        f"Machine '{self.name}' repaired and back to idle at {self.env.now} seconds."
+                    )
                     break
 
             self.parts_made += 1
@@ -191,15 +199,6 @@ class Machine:
                 f"Machine '{self.name}' broken at {self.env.now} seconds. ({self.env.now/60:.2f} minutes)"
             )
             self.working_process.interrupt(fault_type)
-            # MachineBrokenException(
-            #     self.env,
-            #     self.event_logger,
-            #     fault_type=fault_type,
-            #     job_type=fault_type_cfg.job_type,
-            #     machine_id=self.id,
-            #     machine_name=self.name,
-            #     planned_repair_time_in_min=fault_type_cfg.sample_repair_time_in_minutes(),
-            # )
 
     def _waiting_on_repair(self) -> bool:
         return isinstance(self.wait_on_repair, simpy.Event)
