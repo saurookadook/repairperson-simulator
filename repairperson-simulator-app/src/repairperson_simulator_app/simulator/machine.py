@@ -13,10 +13,7 @@ from repairperson_simulator_app.constants import (
 from repairperson_simulator_app.events.machine_events import OnMachineBrokenEventDetails
 from repairperson_simulator_app.simulator.event_logger import EventLogger
 from repairperson_simulator_app.events.machine_events import OnMachineBrokenEventDetails
-from repairperson_simulator_app.simulator.exceptions import (
-    HorizonReached,
-    MachineBrokenException,
-)
+from repairperson_simulator_app.simulator.exceptions import HorizonReached
 from repairperson_simulator_app.simulator.randomizer import Randomizer
 from repairperson_simulator_app.utils.decorators import horizon_guard
 from repairperson_simulator_app.utils.event_observer import event_observer
@@ -57,7 +54,6 @@ class Machine:
         self.root_config = root_config
 
         self.logger: logging.Logger = logging.getLogger(f"{__name__}.Machine-{id}")
-        self.logger.setLevel(logging.DEBUG)
 
         self.event_logger = EventLogger(self.env)
         self.status: MachineStatus = MachineStatus.IDLE

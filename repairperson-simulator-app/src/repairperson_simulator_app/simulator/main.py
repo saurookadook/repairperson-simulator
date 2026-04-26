@@ -5,11 +5,9 @@ from __future__ import annotations
 import logging
 import simpy
 from csv import DictWriter
-from pathlib import Path
+from datetime import datetime
 from rich import inspect
-from rich.logging import RichHandler
 
-from repairperson_simulator_app.constants import EventType
 from repairperson_simulator_app.events.base import Event
 from repairperson_simulator_app.simulator.config import EngineConfig, RootConfig
 from repairperson_simulator_app.simulator.entities import Operator
@@ -23,7 +21,8 @@ from repairperson_simulator_app.simulator.operator_filter_store import (
 )
 from repairperson_simulator_app.simulator.operator_manager import OperatorManager
 from repairperson_simulator_app.simulator.randomizer import Randomizer
-from repairperson_simulator_app.utils.event_observer import event_observer
+from repairperson_simulator_app.utils.filesystem import get_project_root
+from repairperson_simulator_app.utils.logging import configure_logging
 
 try:
     import shutil
@@ -37,7 +36,9 @@ window_width = (
 )  # To account for characters added by logging handlers
 
 
-root_logger: logging.Logger = logging.getLogger()
+root_logger: logging.Logger = configure_logging()
+
+project_root_path = get_project_root(__file__)
 
 
 def create_engine_config(
@@ -126,7 +127,14 @@ def run_simulation(
     engine.start_simulation()
 
     logs = engine.get_logs()
-    output_file = Path("simulation_logs.csv")
+
+    timestamp_str = datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_file = (
+        project_root_path
+        / "data"
+        / "simulation_runs"
+        / f"simulation_run_logs_{timestamp_str}.csv"
+    )
     with output_file.open("w", newline="") as csvfile:
         fieldnames_set = set()
         csv_rows = []
@@ -169,18 +177,6 @@ def simulator_main():
 
 
 if __name__ == "__main__":
-    console_handler = RichHandler(
-        show_time=False, rich_tracebacks=True, tracebacks_theme="emacs"
-    )
-    format_str = (
-        # "{asctime} [{name}: {lineno}] [{levelname:<10s}]: {message:<"
-        "{asctime} [{name}: {lineno}]: {message:<"
-        + str(window_width)
-        + "s}"
-    )
-    console_handler.setFormatter(logging.Formatter(format_str, style="{"))
-    root_logger.addHandler(console_handler)
-
-    root_logger.setLevel(logging.ERROR)
+    root_logger.setLevel(logging.WARNING)
     print(f"Logging Level: {root_logger.getEffectiveLevel()}")
     simulator_main()

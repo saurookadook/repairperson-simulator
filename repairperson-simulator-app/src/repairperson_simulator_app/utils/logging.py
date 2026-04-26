@@ -197,7 +197,7 @@ def is_prod():
     return ENV.lower() == "prod"
 
 
-def configure_logging(app_name: Optional[str]):
+def configure_logging(app_name: Optional[str] = None) -> logging.Logger:
     logger = logging.getLogger(app_name) if app_name is not None else root_logger
 
     if is_prod():
