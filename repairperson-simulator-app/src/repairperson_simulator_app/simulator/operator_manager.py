@@ -273,7 +273,7 @@ class OperatorManager:
             operator.id
         )
         job.is_completed = True
-        machine.wait_on_repair.succeed()
+        cast(simpy.Event, machine.wait_on_repair).succeed()
 
     def _handle_preempted_work(self, job: Job, operator: Operator, machine: Machine):
         # self.job_manager.handle_preempt_start(job, operator, machine)
